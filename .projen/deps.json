@@ -1,6 +1,11 @@
 {
   "dependencies": [
     {
+      "name": "@monocdk-experiment/assert",
+      "version": "1.145.0",
+      "type": "build"
+    },
+    {
       "name": "@types/jest",
       "type": "build"
     },
@@ -20,13 +25,8 @@
       "type": "build"
     },
     {
-      "name": "aws-cdk-lib",
-      "version": "2.1.0",
-      "type": "build"
-    },
-    {
       "name": "constructs",
-      "version": "10.0.5",
+      "version": "3.3.69",
       "type": "build"
     },
     {
@@ -72,6 +72,11 @@
       "type": "build"
     },
     {
+      "name": "monocdk",
+      "version": "1.145.0",
+      "type": "build"
+    },
+    {
       "name": "npm-check-updates",
       "version": "^12",
       "type": "build"
@@ -94,13 +99,13 @@
       "type": "build"
     },
     {
-      "name": "aws-cdk-lib",
-      "version": "^2.1.0",
+      "name": "constructs",
+      "version": "^3.3.69",
       "type": "peer"
     },
     {
-      "name": "constructs",
-      "version": "^10.0.5",
+      "name": "monocdk",
+      "version": "^1.145.0",
       "type": "peer"
     }
   ],
