@@ -4,12 +4,6 @@ import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
 import { Choice, Condition, Errors, IChainable, JsonPath, Parallel, Pass, StateMachine, Succeed, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
 import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem } from 'monocdk/aws-stepfunctions-tasks';
 
-export class Hello {
-  public sayHello() {
-    return 'hello, world!';
-  }
-}
-
 export class DistributedSemaphore extends Construct {
   constructor(scope: Construct, id: string) {
     super(scope, id);
