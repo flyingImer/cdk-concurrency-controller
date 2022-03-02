@@ -146,17 +146,22 @@ export class DistributedSemaphore extends Construct {
       updateExpression: 'SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid',
       conditionExpression: 'attribute_exists(#lockownerid)',
       returnValues: DynamoReturnValues.UPDATED_NEW,
-    }).addRetry({
-      errors: ['DynamoDB.ConditionalCheckFailedException'],
-      maxAttempts: 0,
-    }).addRetry({
-      errors: [Errors.ALL],
-      maxAttempts: 5,
-      backoffRate: 1.5,
-    }).addCatch(
-      successState, {
-        errors: ['DynamoDB.ConditionalCheckFailedException'],
-      });
-    return getLock.next(doWork).next(releaseLock).next(successState);
+    });
+
+    return getLock
+      .next(doWork)
+      .next(
+        releaseLock.addRetry({
+          errors: ['DynamoDB.ConditionalCheckFailedException'],
+          maxAttempts: 0,
+        }).addRetry({
+          errors: [Errors.ALL],
+          maxAttempts: 5,
+          backoffRate: 1.5,
+        }).addCatch(
+          successState, {
+            errors: ['DynamoDB.ConditionalCheckFailedException'],
+          }))
+      .next(successState);
   }
 }
