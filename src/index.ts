@@ -1,8 +1,9 @@
 // TODO: migrate Construct for cdk v2
-import { Construct, Duration } from 'monocdk';
+import { Construct, Duration, RemovalPolicy } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { Choice, Condition, Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, Map, Parallel, Pass, Result, StateMachine, Succeed, TaskInput, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
+import { Choice, Condition, Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Parallel, Pass, Result, StateMachine, Succeed, TaskInput, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
 import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
+import { LogGroup, RetentionDays } from 'monocdk/lib/aws-logs';
 
 export class DistributedSemaphore extends Construct {
   constructor(scope: Construct, id: string) {
@@ -18,14 +19,41 @@ export class DistributedSemaphore extends Construct {
     // TODO: maybe expose via StateMachineFragment?
     const semaphore = new StateMachine(this, 'Semaphore', {
       definition: this.buildSemaphoreDefinition(locks, 'MySemaphore', 'currentlockcount', 5),
+      tracingEnabled: true,
+      logs: {
+        destination: new LogGroup(this, 'SemaphoreLogGroup', {
+          retention: RetentionDays.TWO_MONTHS,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+        includeExecutionData: true,
+        level: LogLevel.ALL,
+      },
     });
 
     new StateMachine(this, 'SemaphoreCleanup', {
       definition: this.buildCleanup(locks, 'MySemaphore', 'currentlockcount'),
+      tracingEnabled: true,
+      logs: {
+        destination: new LogGroup(this, 'SemaphoreCleanupLogGroup', {
+          retention: RetentionDays.TWO_MONTHS,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+        includeExecutionData: true,
+        level: LogLevel.ALL,
+      },
     });
 
     new StateMachine(this, 'SemaphoreTesting', {
       definition: this.buildTesting(100, semaphore),
+      tracingEnabled: true,
+      logs: {
+        destination: new LogGroup(this, 'SemaphoreTestingLogGroup', {
+          retention: RetentionDays.TWO_MONTHS,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+        includeExecutionData: true,
+        level: LogLevel.ALL,
+      },
     });
   }
 

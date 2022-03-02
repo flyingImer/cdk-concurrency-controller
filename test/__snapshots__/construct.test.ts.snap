@@ -143,11 +143,30 @@ Object {
             ],
           ],
         },
+        "LoggingConfiguration": Object {
+          "Destinations": Array [
+            Object {
+              "CloudWatchLogsLogGroup": Object {
+                "LogGroupArn": Object {
+                  "Fn::GetAtt": Array [
+                    "DistributedSemaphoreSemaphoreLogGroup5BA5E6E6",
+                    "Arn",
+                  ],
+                },
+              },
+            },
+          ],
+          "IncludeExecutionData": true,
+          "Level": "ALL",
+        },
         "RoleArn": Object {
           "Fn::GetAtt": Array [
             "DistributedSemaphoreRoleDB487D50",
             "Arn",
           ],
+        },
+        "TracingConfiguration": Object {
+          "Enabled": true,
         },
       },
       "Type": "AWS::StepFunctions::StateMachine",
@@ -201,6 +220,30 @@ Object {
       "Properties": Object {
         "PolicyDocument": Object {
           "Statement": Array [
+            Object {
+              "Action": Array [
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeLogGroups",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            Object {
+              "Action": Array [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
             Object {
               "Action": "dynamodb:UpdateItem",
               "Effect": "Allow",
@@ -324,14 +367,41 @@ Object {
             ],
           ],
         },
+        "LoggingConfiguration": Object {
+          "Destinations": Array [
+            Object {
+              "CloudWatchLogsLogGroup": Object {
+                "LogGroupArn": Object {
+                  "Fn::GetAtt": Array [
+                    "DistributedSemaphoreSemaphoreCleanupLogGroup568B996B",
+                    "Arn",
+                  ],
+                },
+              },
+            },
+          ],
+          "IncludeExecutionData": true,
+          "Level": "ALL",
+        },
         "RoleArn": Object {
           "Fn::GetAtt": Array [
             "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346",
             "Arn",
           ],
         },
+        "TracingConfiguration": Object {
+          "Enabled": true,
+        },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "DistributedSemaphoreSemaphoreCleanupLogGroup568B996B": Object {
+      "DeletionPolicy": "Delete",
+      "Properties": Object {
+        "RetentionInDays": 60,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
     },
     "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346": Object {
       "Properties": Object {
@@ -362,6 +432,30 @@ Object {
       "Properties": Object {
         "PolicyDocument": Object {
           "Statement": Array [
+            Object {
+              "Action": Array [
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeLogGroups",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            Object {
+              "Action": Array [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
             Object {
               "Action": "dynamodb:GetItem",
               "Effect": "Allow",
@@ -428,6 +522,14 @@ Object {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "DistributedSemaphoreSemaphoreLogGroup5BA5E6E6": Object {
+      "DeletionPolicy": "Delete",
+      "Properties": Object {
+        "RetentionInDays": 60,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
     "DistributedSemaphoreSemaphoreTestingE007A549": Object {
       "DependsOn": Array [
         "DistributedSemaphoreSemaphoreTestingRoleDefaultPolicy02A59DA7",
@@ -450,14 +552,41 @@ Object {
             ],
           ],
         },
+        "LoggingConfiguration": Object {
+          "Destinations": Array [
+            Object {
+              "CloudWatchLogsLogGroup": Object {
+                "LogGroupArn": Object {
+                  "Fn::GetAtt": Array [
+                    "DistributedSemaphoreSemaphoreTestingLogGroup5B310090",
+                    "Arn",
+                  ],
+                },
+              },
+            },
+          ],
+          "IncludeExecutionData": true,
+          "Level": "ALL",
+        },
         "RoleArn": Object {
           "Fn::GetAtt": Array [
             "DistributedSemaphoreSemaphoreTestingRole18C930B5",
             "Arn",
           ],
         },
+        "TracingConfiguration": Object {
+          "Enabled": true,
+        },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "DistributedSemaphoreSemaphoreTestingLogGroup5B310090": Object {
+      "DeletionPolicy": "Delete",
+      "Properties": Object {
+        "RetentionInDays": 60,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
     },
     "DistributedSemaphoreSemaphoreTestingRole18C930B5": Object {
       "Properties": Object {
@@ -488,6 +617,30 @@ Object {
       "Properties": Object {
         "PolicyDocument": Object {
           "Statement": Array [
+            Object {
+              "Action": Array [
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeLogGroups",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            Object {
+              "Action": Array [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
             Object {
               "Action": "states:StartExecution",
               "Effect": "Allow",
