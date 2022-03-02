@@ -294,6 +294,140 @@ Object {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "DistributedSemaphoreSemaphoreCleanup4070C6CC": Object {
+      "DependsOn": Array [
+        "DistributedSemaphoreSemaphoreCleanupRoleDefaultPolicy0ADCE922",
+        "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346",
+      ],
+      "Properties": Object {
+        "DefinitionString": Object {
+          "Fn::Join": Array [
+            "",
+            Array [
+              "{\\"StartAt\\":\\"GetCurrentLockItem\\",\\"States\\":{\\"GetCurrentLockItem\\":{\\"Next\\":\\"CheckIfLockIsHeld\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item to look and see if this specific owner is still holding a lock\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"ResultSelector\\":{\\"Item.$\\":\\"$.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.Item)\\"},\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "DistributedSemaphoreLockTable45D69AC1",
+              },
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}},\\"CheckIfLockIsHeld\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the execution in question holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"CleanUpLock\\"}],\\"Default\\":\\"SuccessStateCleanup\\"},\\"SuccessStateCleanup\\":{\\"Type\\":\\"Succeed\\"},\\"CleanUpLock\\":{\\"Next\\":\\"SuccessStateCleanup\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"SuccessStateCleanup\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "DistributedSemaphoreLockTable45D69AC1",
+              },
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"currentlockcount\\",\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}}}}",
+            ],
+          ],
+        },
+        "RoleArn": Object {
+          "Fn::GetAtt": Array [
+            "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": Object {
+                  "Fn::FindInMap": Array [
+                    "ServiceprincipalMap",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    "states",
+                  ],
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "DistributedSemaphoreSemaphoreCleanupRoleDefaultPolicy0ADCE922": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "DistributedSemaphoreLockTable45D69AC1",
+                    },
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "DistributedSemaphoreLockTable45D69AC1",
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "DistributedSemaphoreSemaphoreCleanupRoleDefaultPolicy0ADCE922",
+        "Roles": Array [
+          Object {
+            "Ref": "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
   },
 }
 `;
