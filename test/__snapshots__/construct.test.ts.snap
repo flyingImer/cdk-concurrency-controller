@@ -428,6 +428,154 @@ Object {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "DistributedSemaphoreSemaphoreTestingE007A549": Object {
+      "DependsOn": Array [
+        "DistributedSemaphoreSemaphoreTestingRoleDefaultPolicy02A59DA7",
+        "DistributedSemaphoreSemaphoreTestingRole18C930B5",
+      ],
+      "Properties": Object {
+        "DefinitionString": Object {
+          "Fn::Join": Array [
+            "",
+            Array [
+              "{\\"StartAt\\":\\"GenerateDefaultInput\\",\\"States\\":{\\"GenerateDefaultInput\\":{\\"Type\\":\\"Pass\\",\\"Parameters\\":{\\"iterations\\":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100]},\\"Next\\":\\"StartInParallel\\"},\\"StartInParallel\\":{\\"Type\\":\\"Map\\",\\"End\\":true,\\"Iterator\\":{\\"StartAt\\":\\"RunChildStateMachine\\",\\"States\\":{\\"RunChildStateMachine\\":{\\"Next\\":\\"ClearResults\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"StepFunctions.ExecutionAlreadyExistsException\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":1,\\"BackoffRate\\":5},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":12,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.TaskFailed\\"],\\"ResultPath\\":\\"$.stateoutput.RunChildStateMachine\\",\\"Next\\":\\"ClearResults\\"}],\\"Type\\":\\"Task\\",\\"ResultSelector\\":{\\"Nothing\\":\\"Nothing\\"},\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "DistributedSemaphore7248237C",
+              },
+              "\\"}},\\"ClearResults\\":{\\"Type\\":\\"Pass\\",\\"Result\\":\\"Done\\",\\"End\\":true}}},\\"ItemsPath\\":\\"$.iterations\\",\\"MaxConcurrency\\":0}}}",
+            ],
+          ],
+        },
+        "RoleArn": Object {
+          "Fn::GetAtt": Array [
+            "DistributedSemaphoreSemaphoreTestingRole18C930B5",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "DistributedSemaphoreSemaphoreTestingRole18C930B5": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": Object {
+                  "Fn::FindInMap": Array [
+                    "ServiceprincipalMap",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    "states",
+                  ],
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "DistributedSemaphoreSemaphoreTestingRoleDefaultPolicy02A59DA7": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Ref": "DistributedSemaphore7248237C",
+              },
+            },
+            Object {
+              "Action": Array [
+                "states:DescribeExecution",
+                "states:StopExecution",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":states:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":execution:",
+                    Object {
+                      "Fn::Select": Array [
+                        6,
+                        Object {
+                          "Fn::Split": Array [
+                            ":",
+                            Object {
+                              "Ref": "DistributedSemaphore7248237C",
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    "*",
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": Array [
+                "events:PutTargets",
+                "events:PutRule",
+                "events:DescribeRule",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":events:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":rule/StepFunctionsGetEventsForStepFunctionsExecutionRule",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "DistributedSemaphoreSemaphoreTestingRoleDefaultPolicy02A59DA7",
+        "Roles": Array [
+          Object {
+            "Ref": "DistributedSemaphoreSemaphoreTestingRole18C930B5",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
   },
 }
 `;

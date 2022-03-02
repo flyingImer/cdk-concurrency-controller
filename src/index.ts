@@ -1,8 +1,8 @@
 // TODO: migrate Construct for cdk v2
 import { Construct, Duration } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { Choice, Condition, Errors, IChainable, JsonPath, Parallel, Pass, StateMachine, Succeed, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
-import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem } from 'monocdk/aws-stepfunctions-tasks';
+import { Choice, Condition, Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, Map, Parallel, Pass, Result, StateMachine, Succeed, TaskInput, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
+import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 
 export class DistributedSemaphore extends Construct {
   constructor(scope: Construct, id: string) {
@@ -16,12 +16,16 @@ export class DistributedSemaphore extends Construct {
     });
 
     // TODO: maybe expose via StateMachineFragment?
-    new StateMachine(this, 'Semaphore', {
+    const semaphore = new StateMachine(this, 'Semaphore', {
       definition: this.buildSemaphoreDefinition(locks, 'MySemaphore', 'currentlockcount', 5),
     });
 
     new StateMachine(this, 'SemaphoreCleanup', {
       definition: this.buildCleanup(locks, 'MySemaphore', 'currentlockcount'),
+    });
+
+    new StateMachine(this, 'SemaphoreTesting', {
+      definition: this.buildTesting(100, semaphore),
     });
   }
 
@@ -234,6 +238,57 @@ export class DistributedSemaphore extends Construct {
           errors: ['DynamoDB.ConditionalCheckFailedException'],
         }).next(successState),
       ).otherwise(successState),
+    );
+  }
+
+  private buildTesting(concurrentInputs: number, targetStateMachine: IStateMachine): IChainable {
+    const generateDefaultInput = new Pass(this, 'GenerateDefaultInput', {
+      parameters: {
+        iterations: Array.from({ length: concurrentInputs }, (_, i) => i + 1),
+      },
+    });
+
+    const startInParallel = new Map(this, 'StartInParallel', {
+      maxConcurrency: 0,
+      itemsPath: '$.iterations',
+    });
+
+    const runChildStateMachine = new StepFunctionsStartExecution(this, 'RunChildStateMachine', {
+      stateMachine: targetStateMachine,
+      integrationPattern: IntegrationPattern.RUN_JOB,
+      input: TaskInput.fromObject({
+        AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID: JsonPath.stringAt('$$.Execution.Id'),
+      }),
+      resultSelector: {
+        Nothing: 'Nothing',
+      },
+    });
+
+    const clearResults = new Pass(this, 'ClearResults', {
+      result: Result.fromString('Done'),
+    });
+
+    return generateDefaultInput.next(
+      startInParallel.iterator(
+        runChildStateMachine.addRetry({
+          errors: ['StepFunctions.ExecutionAlreadyExistsException'],
+          maxAttempts: 1,
+          interval: Duration.seconds(1),
+          backoffRate: 5,
+        }).addRetry({
+          errors: [Errors.ALL],
+          maxAttempts: 12,
+          interval: Duration.seconds(1),
+          backoffRate: 2,
+        }).addCatch(
+          clearResults, {
+            errors: ['States.TaskFailed'],
+            resultPath: '$.stateoutput.RunChildStateMachine',
+          },
+        ).next(
+          clearResults,
+        ),
+      ),
     );
   }
 }
