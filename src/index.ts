@@ -64,9 +64,7 @@ export class DistributedSemaphore extends Construct {
         ':lockname': DynamoAttributeValue.fromString(lockName),
       },
       conditionExpression: `${locks.schema().partitionKey.name} <> :lockname`,
-    }).addCatch(acquireLock, {
-      errors: [Errors.ALL],
-    }).next(acquireLock);
+    });
 
     const continueBecauseLockWasAlreadyAcquired = new Pass(this, 'ContinueBecauseLockWasAlreadyAcquired', {
       comment: 'In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.',
@@ -74,17 +72,11 @@ export class DistributedSemaphore extends Construct {
     const waitToGetLock = new Wait(this, 'WaitToGetLock', {
       comment: 'If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.',
       time: WaitTime.duration(Duration.seconds(3)),
-    }).next(acquireLock);
+    });
 
     const checkIfLockAlreadyAcquired = new Choice(this, 'CheckIfLockAlreadyAcquired', {
       comment: 'This state checks to see if the current execution already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.',
-    }).when(
-      Condition.and(
-        Condition.isPresent('$.lockinfo.currentlockitem.ItemString'),
-        Condition.stringMatches('$.lockinfo.currentlockitem.ItemString', '*Z*'),
-      ),
-      continueBecauseLockWasAlreadyAcquired,
-    ).otherwise(waitToGetLock);
+    });
 
     const getCurrentLockRecord = new DynamoGetItem(this, 'GetCurrentLockRecord', {
       comment: 'This state is called when the execution is unable to acquire a lock because there limit has either been exceeded or because this execution already holds a lock. I that case, this task loads info from DDB for the current lock item so that the right decision can be made in subsequent states.',
@@ -105,7 +97,7 @@ export class DistributedSemaphore extends Construct {
       },
       resultPath: '$.lockinfo.currentlockitem',
       consistentRead: true,
-    }).next(checkIfLockAlreadyAcquired);
+    });
 
     const getLock = new Parallel(this, 'GetLock', {
       comment: 'This parallel state contains the logic to acquire a lock and to handle the cases where a lock cannot be Acquired. Containing this in a parallel allows for visual separation when viewing the state machine and makes it easier to reuse this same logic elsewhere if desired. Because this state sets ResultPath: null, it will not manipulate the execution input that is passed on to the subsequent part of your state machine that is responsible for doing the work.',
@@ -117,13 +109,29 @@ export class DistributedSemaphore extends Construct {
         errors: [Errors.ALL],
         maxAttempts: 6,
         backoffRate: 2,
-      }).addCatch(initializeLockItem, {
-        errors: ['DynamoDB.AmazonDynamoDBException'],
-        resultPath: '$.lockinfo.acquisitionerror',
-      }).addCatch(getCurrentLockRecord, {
-        errors: ['DynamoDB.ConditionalCheckFailedException'],
-        resultPath: '$.lockinfo.acquisitionerror',
-      }),
+      }).addCatch(
+        initializeLockItem.addCatch(acquireLock, { errors: [Errors.ALL] }).next(acquireLock),
+        {
+          errors: ['DynamoDB.AmazonDynamoDBException'],
+          resultPath: '$.lockinfo.acquisitionerror',
+        },
+      ).addCatch(
+        getCurrentLockRecord.next(
+          checkIfLockAlreadyAcquired.when(
+            Condition.and(
+              Condition.isPresent('$.lockinfo.currentlockitem.ItemString'),
+              Condition.stringMatches('$.lockinfo.currentlockitem.ItemString', '*Z*'),
+            ),
+            continueBecauseLockWasAlreadyAcquired,
+          ).otherwise(
+            waitToGetLock.next(acquireLock),
+          ),
+        ),
+        {
+          errors: ['DynamoDB.ConditionalCheckFailedException'],
+          resultPath: '$.lockinfo.acquisitionerror',
+        },
+      ),
     );
 
     // do actual work
@@ -164,10 +172,9 @@ export class DistributedSemaphore extends Construct {
           errors: [Errors.ALL],
           maxAttempts: 5,
           backoffRate: 1.5,
-        }).addCatch(
-          successState, {
-            errors: ['DynamoDB.ConditionalCheckFailedException'],
-          }))
+        }).addCatch(successState, {
+          errors: ['DynamoDB.ConditionalCheckFailedException'],
+        }))
       .next(successState);
   }
 
@@ -191,6 +198,10 @@ export class DistributedSemaphore extends Construct {
       },
       resultPath: '$.lockinfo.currentlockitem',
       consistentRead: true,
+    });
+
+    const checkIfLockHeld = new Choice(this, 'CheckIfLockIsHeld', {
+      comment: 'This state checks to see if the execution in question holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock',
     });
 
     const successState = new Succeed(this, 'SuccessStateCleanup'); // FIXME: correct the name
@@ -219,9 +230,7 @@ export class DistributedSemaphore extends Construct {
       interval: Duration.seconds(5),
       backoffRate: 1.4,
     }).next(
-      new Choice(this, 'CheckIfLockIsHeld', {
-        comment: 'This state checks to see if the execution in question holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock',
-      }).when(
+      checkIfLockHeld.when(
         Condition.and(
           Condition.isPresent('$.lockinfo.currentlockitem.ItemString'),
           Condition.stringMatches('$.lockinfo.currentlockitem.ItemString', '*Z*'),
@@ -280,14 +289,10 @@ export class DistributedSemaphore extends Construct {
           maxAttempts: 12,
           interval: Duration.seconds(1),
           backoffRate: 2,
-        }).addCatch(
-          clearResults, {
-            errors: ['States.TaskFailed'],
-            resultPath: '$.stateoutput.RunChildStateMachine',
-          },
-        ).next(
-          clearResults,
-        ),
+        }).addCatch(clearResults, {
+          errors: ['States.TaskFailed'],
+          resultPath: '$.stateoutput.RunChildStateMachine',
+        }).next(clearResults),
       ),
     );
   }
