@@ -35,4 +35,8 @@ project.deps.all.filter(dep => dep.name.includes('@aws-cdk')).forEach(dep => pro
 project.deps.removeDependency('constructs', DependencyType.PEER);
 project.deps.addDependency(`constructs@^${CONSTRUCT_VERSION}`, DependencyType.PEER);
 
+project.tsconfigDev.addInclude('example/**/*.ts');
+// project.gitignore.exclude('.env');
+project.gitignore.exclude('example/**/*.js', 'example/**/*.d.ts', 'example/cdk.out');
+
 project.synth();
