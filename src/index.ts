@@ -187,6 +187,13 @@ export class DistributedSemaphore extends Construct {
         runtime: Runtime.PYTHON_3_8,
         timeout: Duration.seconds(60),
       }),
+      payload: TaskInput.fromObject({
+        Input: JsonPath.stringAt('$'),
+      }),
+      resultSelector: {
+        'payload.$': '$.Payload',
+      },
+      retryOnServiceExceptions: false,
     });
 
     // end state
