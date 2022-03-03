@@ -337,6 +337,43 @@ Object {
       },
       "Type": "AWS::IAM::Policy",
     },
+    "DistributedSemaphoreRunForIncomplete46566F45": Object {
+      "Properties": Object {
+        "EventPattern": Object {
+          "detail": Object {
+            "stateMachineArn": Array [
+              Object {
+                "Ref": "DistributedSemaphore7248237C",
+              },
+            ],
+            "status": Array [
+              "FAILED",
+              "TIMED_OUT",
+              "ABORTED",
+            ],
+          },
+          "source": Array [
+            "aws.states",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": Array [
+          Object {
+            "Arn": Object {
+              "Ref": "DistributedSemaphoreSemaphoreCleanup4070C6CC",
+            },
+            "Id": "Target0",
+            "RoleArn": Object {
+              "Fn::GetAtt": Array [
+                "DistributedSemaphoreSemaphoreCleanupEventsRole88C26C12",
+                "Arn",
+              ],
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
     "DistributedSemaphoreSemaphoreCleanup4070C6CC": Object {
       "DependsOn": Array [
         "DistributedSemaphoreSemaphoreCleanupRoleDefaultPolicy0ADCE922",
@@ -394,6 +431,46 @@ Object {
         },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "DistributedSemaphoreSemaphoreCleanupEventsRole88C26C12": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": "events.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "DistributedSemaphoreSemaphoreCleanupEventsRoleDefaultPolicyE7FC8AA3": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Ref": "DistributedSemaphoreSemaphoreCleanup4070C6CC",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "DistributedSemaphoreSemaphoreCleanupEventsRoleDefaultPolicyE7FC8AA3",
+        "Roles": Array [
+          Object {
+            "Ref": "DistributedSemaphoreSemaphoreCleanupEventsRole88C26C12",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "DistributedSemaphoreSemaphoreCleanupLogGroup568B996B": Object {
       "DeletionPolicy": "Delete",

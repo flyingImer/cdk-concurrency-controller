@@ -3,6 +3,8 @@ import { Construct, Duration, RemovalPolicy } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
 import { Choice, Condition, Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Parallel, Pass, Result, StateMachine, Succeed, TaskInput, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
 import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
+import { Rule } from 'monocdk/lib/aws-events';
+import { SfnStateMachine } from 'monocdk/lib/aws-events-targets';
 import { LogGroup, RetentionDays } from 'monocdk/lib/aws-logs';
 
 export class DistributedSemaphore extends Construct {
@@ -30,7 +32,7 @@ export class DistributedSemaphore extends Construct {
       },
     });
 
-    new StateMachine(this, 'SemaphoreCleanup', {
+    const semaphoreCleanup = new StateMachine(this, 'SemaphoreCleanup', {
       definition: this.buildCleanup(locks, 'MySemaphore', 'currentlockcount'),
       tracingEnabled: true,
       logs: {
@@ -40,6 +42,17 @@ export class DistributedSemaphore extends Construct {
         }),
         includeExecutionData: true,
         level: LogLevel.ALL,
+      },
+    });
+
+    new Rule(this, 'RunForIncomplete', {
+      targets: [new SfnStateMachine(semaphoreCleanup)],
+      eventPattern: {
+        source: ['aws.states'],
+        detail: {
+          stateMachineArn: [semaphore.stateMachineArn],
+          status: ['FAILED', 'TIMED_OUT', 'ABORTED'],
+        },
       },
     });
 
