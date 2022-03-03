@@ -96,6 +96,20 @@ Object {
       },
     },
   },
+  "Parameters": Object {
+    "AssetParameters3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25ArtifactHash3DCD964F": Object {
+      "Description": "Artifact hash for asset \\"3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25\\"",
+      "Type": "String",
+    },
+    "AssetParameters3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25S3Bucket7AF91F86": Object {
+      "Description": "S3 bucket for asset \\"3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25\\"",
+      "Type": "String",
+    },
+    "AssetParameters3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25S3VersionKeyF8FA9722": Object {
+      "Description": "S3 key for asset version \\"3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25\\"",
+      "Type": "String",
+    },
+  },
   "Resources": Object {
     "DistributedSemaphore7248237C": Object {
       "DependsOn": Array [
@@ -131,7 +145,18 @@ Object {
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}},\\"CheckIfLockAlreadyAcquired\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the current execution already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"ContinueBecauseLockWasAlreadyAcquired\\"}],\\"Default\\":\\"WaitToGetLock\\"},\\"ContinueBecauseLockWasAlreadyAcquired\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"End\\":true}}}]},\\"DoWork\\":{\\"Type\\":\\"Parallel\\",\\"Comment\\":\\"This is a placeholder for the actual logic of your workflow. By wrapping this in a parallel state, you should be able to paste in any statemachine defined elsewhere. In this case, to illustrate the behavior, this one will run through some pass states and then call a Lambda function that will sleep for a period before it returns.\\",\\"Next\\":\\"ReleaseLock\\",\\"Branches\\":[{\\"StartAt\\":\\"Pass1\\",\\"States\\":{\\"Pass1\\":{\\"Type\\":\\"Pass\\",\\"End\\":true}}}]},\\"ReleaseLock\\":{\\"Next\\":\\"SuccessState\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"SuccessState\\"}],\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}},\\"CheckIfLockAlreadyAcquired\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the current execution already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"ContinueBecauseLockWasAlreadyAcquired\\"}],\\"Default\\":\\"WaitToGetLock\\"},\\"ContinueBecauseLockWasAlreadyAcquired\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"End\\":true}}}]},\\"DoWork\\":{\\"Next\\":\\"ReleaseLock\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"Lambda.ServiceException\\",\\"Lambda.AWSLambdaException\\",\\"Lambda.SdkClientException\\"],\\"IntervalSeconds\\":2,\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::lambda:invoke\\",\\"Parameters\\":{\\"FunctionName\\":\\"",
+              Object {
+                "Fn::GetAtt": Array [
+                  "DistributedSemaphoreDoWorkLambda21413023",
+                  "Arn",
+                ],
+              },
+              "\\",\\"Payload.$\\":\\"$\\"}},\\"ReleaseLock\\":{\\"Next\\":\\"SuccessState\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"SuccessState\\"}],\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
@@ -170,6 +195,91 @@ Object {
         },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "DistributedSemaphoreDoWorkLambda21413023": Object {
+      "DependsOn": Array [
+        "DistributedSemaphoreDoWorkLambdaServiceRoleCA304FBD",
+      ],
+      "Properties": Object {
+        "Code": Object {
+          "S3Bucket": Object {
+            "Ref": "AssetParameters3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25S3Bucket7AF91F86",
+          },
+          "S3Key": Object {
+            "Fn::Join": Array [
+              "",
+              Array [
+                Object {
+                  "Fn::Select": Array [
+                    0,
+                    Object {
+                      "Fn::Split": Array [
+                        "||",
+                        Object {
+                          "Ref": "AssetParameters3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25S3VersionKeyF8FA9722",
+                        },
+                      ],
+                    },
+                  ],
+                },
+                Object {
+                  "Fn::Select": Array [
+                    1,
+                    Object {
+                      "Fn::Split": Array [
+                        "||",
+                        Object {
+                          "Ref": "AssetParameters3bf22055834c51510d5a06da8c68da04c0c179b2b75913455944db109ee01a25S3VersionKeyF8FA9722",
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            ],
+          },
+        },
+        "Handler": "do_work_function.app.lambda_handler",
+        "Role": Object {
+          "Fn::GetAtt": Array [
+            "DistributedSemaphoreDoWorkLambdaServiceRoleCA304FBD",
+            "Arn",
+          ],
+        },
+        "Runtime": "python3.8",
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "DistributedSemaphoreDoWorkLambdaServiceRoleCA304FBD": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": Array [
+          Object {
+            "Fn::Join": Array [
+              "",
+              Array [
+                "arn:",
+                Object {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
     },
     "DistributedSemaphoreLockTable45D69AC1": Object {
       "DeletionPolicy": "Retain",
@@ -243,6 +353,16 @@ Object {
               ],
               "Effect": "Allow",
               "Resource": "*",
+            },
+            Object {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::GetAtt": Array [
+                  "DistributedSemaphoreDoWorkLambda21413023",
+                  "Arn",
+                ],
+              },
             },
             Object {
               "Action": "dynamodb:UpdateItem",
