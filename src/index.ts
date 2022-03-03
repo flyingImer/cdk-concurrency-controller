@@ -185,6 +185,7 @@ export class DistributedSemaphore extends Construct {
         index: 'do_work_function/app.py',
         handler: 'lambda_handler',
         runtime: Runtime.PYTHON_3_8,
+        timeout: Duration.seconds(60),
       }),
     });
 
