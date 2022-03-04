@@ -5,8 +5,8 @@ import { Rule } from 'monocdk/aws-events';
 import { SfnStateMachine } from 'monocdk/aws-events-targets';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
 import { Choice, Condition, Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Pass, Result, StateMachine, Succeed, TaskInput } from 'monocdk/aws-stepfunctions';
-import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
-import { AcquireLockFragment, ReleaseLockFragment } from './fragments';
+import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
+import { AcquireLockFragment, GetLockDetailsFragment, ReleaseLockFragment } from './fragments';
 
 export interface DistributedSemaphoreProps {
   readonly doWork: IChainable;
@@ -88,25 +88,10 @@ export class DistributedSemaphore extends Construct {
   }
 
   private buildCleanup(locks: Table, lockName: string, lockCountAttrName: string): IChainable {
-    const getCurrentLockItem = new DynamoGetItem(this, 'GetCurrentLockItem', {
-      comment: 'Get info from DDB for the lock item to look and see if this specific owner is still holding a lock',
-      table: locks,
-      key: {
-        // TODO: dynamic lock name from state machine running context, e.g., input
-        [locks.schema().partitionKey.name]: DynamoAttributeValue.fromString(lockName),
-      },
-      expressionAttributeNames: {
-        '#lockownerid.$': '$.detail.executionArn',
-      },
-      projectionExpression: [
-        new DynamoProjectionExpression().withAttribute('#lockownerid'),
-      ],
-      resultSelector: {
-        'Item.$': '$.Item',
-        'ItemString.$': 'States.JsonToString($.Item)',
-      },
-      resultPath: '$.lockinfo.currentlockitem',
-      consistentRead: true,
+    const getCurrentLockItem = new GetLockDetailsFragment(this, 'GetCurrentLockItem', {
+      locks,
+      lockName,
+      lockOwnerId: '$.detail.executionArn',
     });
 
     const checkIfLockHeld = new Choice(this, 'CheckIfLockIsHeld', {
@@ -114,26 +99,19 @@ export class DistributedSemaphore extends Construct {
     });
 
     const successState = new Succeed(this, 'SuccessStateCleanup'); // FIXME: correct the name
-    const cleanUpLock = new DynamoUpdateItem(this, 'CleanUpLock', {
-      comment: 'If this lockowerid is still there, then clean it up and release the lock',
-      table: locks,
-      key: {
-        // TODO: dynamic lock name from state machine running context, e.g., input
-        [locks.schema().partitionKey.name]: DynamoAttributeValue.fromString(lockName),
+    const cleanUpLock = new ReleaseLockFragment(this, 'CleanUpLock', {
+      locks,
+      lockName,
+      lockCountAttrName,
+      lockOwnerId: '$.detail.executionArn',
+      errorsAllRetryProps: {
+        maxAttempts: 20,
+        interval: Duration.seconds(5),
+        backoffRate: 1.4,
       },
-      expressionAttributeNames: {
-        '#currentlockcount': lockCountAttrName,
-        '#lockownerid.$': '$.detail.executionArn',
-      },
-      expressionAttributeValues: {
-        ':decrease': DynamoAttributeValue.fromNumber(1),
-      },
-      updateExpression: 'SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid',
-      conditionExpression: 'attribute_exists(#lockownerid)',
-      returnValues: DynamoReturnValues.UPDATED_NEW,
     });
 
-    return getCurrentLockItem.addRetry({
+    return getCurrentLockItem.toSingleState().addRetry({
       errors: [Errors.ALL],
       maxAttempts: 20,
       interval: Duration.seconds(5),
@@ -144,17 +122,7 @@ export class DistributedSemaphore extends Construct {
           Condition.isPresent('$.lockinfo.currentlockitem.ItemString'),
           Condition.stringMatches('$.lockinfo.currentlockitem.ItemString', '*Z*'),
         ),
-        cleanUpLock.addRetry({
-          errors: ['DynamoDB.ConditionalCheckFailedException'],
-          maxAttempts: 0,
-        }).addRetry({
-          errors: [Errors.ALL],
-          maxAttempts: 20,
-          interval: Duration.seconds(5),
-          backoffRate: 1.4,
-        }).addCatch(successState, {
-          errors: ['DynamoDB.ConditionalCheckFailedException'],
-        }).next(successState),
+        cleanUpLock,
       ).otherwise(successState),
     );
   }

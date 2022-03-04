@@ -131,7 +131,7 @@ Object {
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"DoNothing\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseMyLock\\"},\\"ReleaseMyLock\\":{\\"Type\\":\\"Parallel\\",\\"End\\":true,\\"Branches\\":[{\\"StartAt\\":\\"ReleaseMyLock: ReleaseLock\\",\\"States\\":{\\"ReleaseMyLock: ReleaseLock\\":{\\"Next\\":\\"ReleaseMyLock: LockReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"ReleaseMyLock: LockNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"DoNothing\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseMyLock\\"},\\"ReleaseMyLock\\":{\\"Type\\":\\"Parallel\\",\\"End\\":true,\\"Branches\\":[{\\"StartAt\\":\\"ReleaseMyLock: ReleaseLock\\",\\"States\\":{\\"ReleaseMyLock: ReleaseLock\\":{\\"Next\\":\\"ReleaseMyLock: LockReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"ReleaseMyLock: LockNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
@@ -384,7 +384,7 @@ Object {
           "Fn::Join": Array [
             "",
             Array [
-              "{\\"StartAt\\":\\"GetCurrentLockItem\\",\\"States\\":{\\"GetCurrentLockItem\\":{\\"Next\\":\\"CheckIfLockIsHeld\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item to look and see if this specific owner is still holding a lock\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"ResultSelector\\":{\\"Item.$\\":\\"$.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.Item)\\"},\\"Resource\\":\\"arn:",
+              "{\\"StartAt\\":\\"GetCurrentLockItem\\",\\"States\\":{\\"GetCurrentLockItem\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"CheckIfLockIsHeld\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Branches\\":[{\\"StartAt\\":\\"GetCurrentLockItem: GetLockDetails\\",\\"States\\":{\\"GetCurrentLockItem: GetLockDetails\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"ResultSelector\\":{\\"Item.$\\":\\"$.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.Item)\\"},\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
@@ -392,7 +392,7 @@ Object {
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}},\\"CheckIfLockIsHeld\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the execution in question holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"CleanUpLock\\"}],\\"Default\\":\\"SuccessStateCleanup\\"},\\"SuccessStateCleanup\\":{\\"Type\\":\\"Succeed\\"},\\"CleanUpLock\\":{\\"Next\\":\\"SuccessStateCleanup\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"SuccessStateCleanup\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"Resource\\":\\"arn:",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"CheckIfLockIsHeld\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the execution in question holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"ReleaseLock\\"}],\\"Default\\":\\"SuccessStateCleanup\\"},\\"SuccessStateCleanup\\":{\\"Type\\":\\"Succeed\\"},\\"ReleaseLock\\":{\\"Next\\":\\"LockReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"LockNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
@@ -400,7 +400,7 @@ Object {
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"currentlockcount\\",\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}}}}",
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"currentlockcount\\",\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"LockReleased\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"LockNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"LockReleased\\"}}}",
             ],
           ],
         },
@@ -534,7 +534,7 @@ Object {
               "Resource": "*",
             },
             Object {
-              "Action": "dynamodb:GetItem",
+              "Action": "dynamodb:UpdateItem",
               "Effect": "Allow",
               "Resource": Object {
                 "Fn::Join": Array [
@@ -561,7 +561,7 @@ Object {
               },
             },
             Object {
-              "Action": "dynamodb:UpdateItem",
+              "Action": "dynamodb:GetItem",
               "Effect": "Allow",
               "Resource": Object {
                 "Fn::Join": Array [

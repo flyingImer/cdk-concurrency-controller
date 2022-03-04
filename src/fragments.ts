@@ -1,7 +1,7 @@
 import { Construct } from 'constructs';
 import { Duration } from 'monocdk';
 import { Table } from 'monocdk/aws-dynamodb';
-import { StateMachineFragment, State, INextable, JsonPath, Pass, Wait, WaitTime, Choice, Errors, Condition } from 'monocdk/aws-stepfunctions';
+import { StateMachineFragment, State, INextable, JsonPath, Pass, Wait, WaitTime, Choice, Errors, Condition, RetryProps } from 'monocdk/aws-stepfunctions';
 import { DynamoUpdateItem, DynamoAttributeValue, DynamoReturnValues, DynamoPutItem, DynamoGetItem, DynamoProjectionExpression } from 'monocdk/aws-stepfunctions-tasks';
 
 export interface LockFragmentCommonProps {
@@ -129,7 +129,13 @@ export class AcquireLockFragment extends StateMachineFragment {
   }
 }
 
-export interface ReleaseLockFragmentProps extends LockFragmentCommonProps {}
+export interface ReleaseLockFragmentProps extends LockFragmentCommonProps {
+  readonly lockOwnerId?: string;
+  /**
+   * define how to handle Errors.ALL
+   */
+  readonly errorsAllRetryProps?: Omit<RetryProps, 'errors'>;
+}
 
 export class ReleaseLockFragment extends StateMachineFragment {
   public readonly startState: State;
@@ -138,16 +144,17 @@ export class ReleaseLockFragment extends StateMachineFragment {
   constructor(scope: Construct, id: string, props: ReleaseLockFragmentProps) {
     super(scope, id);
 
-    const { locks, lockName, lockCountAttrName } = props;
+    const { locks, lockName, lockCountAttrName, lockOwnerId, errorsAllRetryProps } = props;
 
     const releaseLock = new DynamoUpdateItem(this, 'ReleaseLock', {
+      comment: 'If this lockowerid is still there, then clean it up and release the lock',
       table: locks,
       key: {
         [locks.schema().partitionKey.name]: DynamoAttributeValue.fromString(lockName),
       },
       expressionAttributeNames: {
         '#currentlockcount': lockCountAttrName,
-        '#lockownerid.$': '$$.Execution.Id',
+        '#lockownerid.$': lockOwnerId || '$$.Execution.Id',
       },
       expressionAttributeValues: {
         ':decrease': DynamoAttributeValue.fromNumber(1),
@@ -167,6 +174,7 @@ export class ReleaseLockFragment extends StateMachineFragment {
       errors: [Errors.ALL],
       maxAttempts: 5,
       backoffRate: 1.5,
+      ...errorsAllRetryProps,
     }).addCatch(
       lockNotFoundContinue.next(lockReleased),
       {
@@ -175,5 +183,43 @@ export class ReleaseLockFragment extends StateMachineFragment {
     ).next(
       lockReleased,
     ).endStates;
+  }
+}
+
+export interface GetLockDetailsFragmentProps extends Omit<LockFragmentCommonProps, 'lockCountAttrName'> {
+  readonly lockOwnerId: string;
+  readonly resultPath?: string;
+}
+
+export class GetLockDetailsFragment extends StateMachineFragment {
+  public readonly startState: State;
+  public readonly endStates: INextable[];
+
+  constructor(scope: Construct, id: string, props: GetLockDetailsFragmentProps) {
+    super(scope, id);
+
+    const { locks, lockName, lockOwnerId, resultPath } = props;
+
+    this.startState = new DynamoGetItem(this, 'GetLockDetails', {
+      comment: 'Get info from DDB for the lock item.',
+      table: locks,
+      key: {
+        // TODO: dynamic lock name from state machine running context, e.g., input
+        [locks.schema().partitionKey.name]: DynamoAttributeValue.fromString(lockName),
+      },
+      expressionAttributeNames: {
+        '#lockownerid.$': lockOwnerId,
+      },
+      projectionExpression: [
+        new DynamoProjectionExpression().withAttribute('#lockownerid'),
+      ],
+      resultSelector: {
+        'Item.$': '$.Item',
+        'ItemString.$': 'States.JsonToString($.Item)',
+      },
+      resultPath: resultPath || '$.lockinfo.currentlockitem',
+      consistentRead: true,
+    });
+    this.endStates = this.startState.endStates;
   }
 }
