@@ -1,18 +1,20 @@
 // TODO: migrate Construct for cdk v2
-import * as path from 'path';
 import { Construct, Duration, RemovalPolicy } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
 import { Rule } from 'monocdk/aws-events';
 import { SfnStateMachine } from 'monocdk/aws-events-targets';
-import { Runtime } from 'monocdk/aws-lambda';
-import { PythonFunction } from 'monocdk/aws-lambda-python';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
 import { Choice, Condition, Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Parallel, Pass, Result, StateMachine, Succeed, TaskInput, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
-import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, LambdaInvoke, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
+import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 
+export interface DistributedSemaphoreProps {
+  readonly doWork: IChainable;
+}
 export class DistributedSemaphore extends Construct {
-  constructor(scope: Construct, id: string) {
+  private readonly doWork: IChainable;
+  constructor(scope: Construct, id: string, props: DistributedSemaphoreProps) {
     super(scope, id);
+    this.doWork = props.doWork;
     const locks = new Table(this, 'LockTable', {
       partitionKey: {
         name: 'LockName',
@@ -178,24 +180,6 @@ export class DistributedSemaphore extends Construct {
       ),
     );
 
-    // do actual work
-    const doWork = new LambdaInvoke(this, 'DoWork', {
-      lambdaFunction: new PythonFunction(this, 'DoWorkLambda', {
-        entry: path.join(__dirname, '..', 'example', 'lambda'),
-        index: 'do_work_function/app.py',
-        handler: 'lambda_handler',
-        runtime: Runtime.PYTHON_3_8,
-        timeout: Duration.seconds(60),
-      }),
-      payload: TaskInput.fromObject({
-        Input: JsonPath.stringAt('$'),
-      }),
-      resultSelector: {
-        'payload.$': '$.Payload',
-      },
-      retryOnServiceExceptions: false,
-    });
-
     // end state
     const successState = new Succeed(this, 'SuccessState');
 
@@ -218,7 +202,7 @@ export class DistributedSemaphore extends Construct {
     });
 
     return getLock
-      .next(doWork)
+      .next(this.doWork)
       .next(
         releaseLock.addRetry({
           errors: ['DynamoDB.ConditionalCheckFailedException'],

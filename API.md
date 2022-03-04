@@ -9,13 +9,14 @@
 ```typescript
 import { DistributedSemaphore } from 'cdk-concurrency-controller'
 
-new DistributedSemaphore(scope: Construct, id: string)
+new DistributedSemaphore(scope: Construct, id: string, props: DistributedSemaphoreProps)
 ```
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps">DistributedSemaphoreProps</a></code> | *No description.* |
 
 ---
 
@@ -28,6 +29,12 @@ new DistributedSemaphore(scope: Construct, id: string)
 ##### `id`<sup>Required</sup> <a name="id" id="cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.id"></a>
 
 - *Type:* string
+
+---
+
+##### `props`<sup>Required</sup> <a name="props" id="cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.props"></a>
+
+- *Type:* <a href="#cdk-concurrency-controller.DistributedSemaphoreProps">DistributedSemaphoreProps</a>
 
 ---
 
@@ -92,6 +99,35 @@ The construct tree node associated with this construct.
 ---
 
 
+## Structs <a name="Structs" id="Structs"></a>
+
+### DistributedSemaphoreProps <a name="DistributedSemaphoreProps" id="cdk-concurrency-controller.DistributedSemaphoreProps"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.DistributedSemaphoreProps.Initializer"></a>
+
+```typescript
+import { DistributedSemaphoreProps } from 'cdk-concurrency-controller'
+
+const distributedSemaphoreProps: DistributedSemaphoreProps = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.doWork">doWork</a></code> | <code>monocdk.aws_stepfunctions.IChainable</code> | *No description.* |
+
+---
+
+##### `doWork`<sup>Required</sup> <a name="doWork" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.doWork"></a>
+
+```typescript
+public readonly doWork: IChainable;
+```
+
+- *Type:* monocdk.aws_stepfunctions.IChainable
+
+---
 
 
 
