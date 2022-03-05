@@ -4,9 +4,9 @@ import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
 import { Rule } from 'monocdk/aws-events';
 import { SfnStateMachine } from 'monocdk/aws-events-targets';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Pass, Result, StateMachine, Succeed, TaskInput } from 'monocdk/aws-stepfunctions';
+import { Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Pass, Result, StateMachine, TaskInput } from 'monocdk/aws-stepfunctions';
 import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
-import { AcquireLockFragment, CheckIfHoldingLockFragment, ReleaseLockFragment } from './fragments';
+import { AcquireLockFragment, CleanUpLockFragment, ReleaseLockFragment } from './fragments';
 
 export interface DistributedSemaphoreProps {
   readonly doWork: IChainable;
@@ -88,34 +88,12 @@ export class DistributedSemaphore extends Construct {
   }
 
   private buildCleanup(locks: Table, lockName: string, lockCountAttrName: string): IChainable {
-    const lockNotHeldContinue = new Succeed(this, 'LockNotHeldContinue');
-    const cleanUpLock = new ReleaseLockFragment(this, 'CleanUpLock', {
+    return new CleanUpLockFragment(this, 'CleanUpMyLock', {
       locks,
       lockName,
       lockCountAttrName,
       lockOwnerId: '$.detail.executionArn',
-      errorsAllRetryProps: {
-        maxAttempts: 20,
-        interval: Duration.seconds(5),
-        backoffRate: 1.4,
-      },
     });
-
-    const checkIfHoldingLock = new CheckIfHoldingLockFragment(this, 'CheckIfHoldingLock', {
-      locks,
-      lockName,
-      lockOwnerId: '$.detail.executionArn',
-      getLockErrorsHandling: [{
-        errors: [Errors.ALL],
-        maxAttempts: 20,
-        interval: Duration.seconds(5),
-        backoffRate: 1.4,
-      }],
-      ifHeldAction: cleanUpLock,
-      ifNotHeldAction: lockNotHeldContinue,
-    });
-
-    return checkIfHoldingLock;
   }
 
   private buildTesting(concurrentInputs: number, targetStateMachine: IStateMachine): IChainable {

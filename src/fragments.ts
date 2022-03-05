@@ -1,7 +1,7 @@
 import { Construct } from 'constructs';
 import { Duration } from 'monocdk';
 import { Table } from 'monocdk/aws-dynamodb';
-import { StateMachineFragment, State, INextable, JsonPath, Pass, Wait, WaitTime, Choice, Errors, Condition, RetryProps, IChainable } from 'monocdk/aws-stepfunctions';
+import { StateMachineFragment, State, INextable, JsonPath, Pass, Wait, WaitTime, Choice, Errors, Condition, RetryProps, IChainable, Succeed } from 'monocdk/aws-stepfunctions';
 import { DynamoUpdateItem, DynamoAttributeValue, DynamoReturnValues, DynamoPutItem, DynamoGetItem, DynamoProjectionExpression } from 'monocdk/aws-stepfunctions-tasks';
 
 export interface LockFragmentCommonProps {
@@ -224,5 +224,49 @@ export class CheckIfHoldingLockFragment extends StateMachineFragment {
       getLockErrorsHandling.forEach((retryProps) => getLockDetails.addRetry(retryProps));
     }
     this.endStates = getLockDetails.next(checkIfLockHeld).endStates;
+  }
+}
+
+export interface CleanUpLockFragmentProps extends LockFragmentCommonProps {
+  readonly lockOwnerId: string;
+}
+
+export class CleanUpLockFragment extends StateMachineFragment {
+  public readonly startState: State;
+  public readonly endStates: INextable[];
+
+  constructor(scope: Construct, id: string, props: CleanUpLockFragmentProps) {
+    super(scope, id);
+
+    const { locks, lockName, lockCountAttrName, lockOwnerId } = props;
+
+    const lockNotHeldContinue = new Succeed(this, 'LockNotHeldContinue');
+    const cleanUpLock = new ReleaseLockFragment(this, 'CleanUpLock', {
+      locks,
+      lockName,
+      lockCountAttrName,
+      lockOwnerId,
+      errorsAllRetryProps: {
+        maxAttempts: 20,
+        interval: Duration.seconds(5),
+        backoffRate: 1.4,
+      },
+    });
+
+    const checkIfHoldingLock = new CheckIfHoldingLockFragment(this, 'CheckIfHoldingLock', {
+      locks,
+      lockName,
+      lockOwnerId,
+      getLockErrorsHandling: [{
+        errors: [Errors.ALL],
+        maxAttempts: 20,
+        interval: Duration.seconds(5),
+        backoffRate: 1.4,
+      }],
+      ifHeldAction: cleanUpLock,
+      ifNotHeldAction: lockNotHeldContinue,
+    });
+    this.startState = checkIfHoldingLock.startState;
+    this.endStates = checkIfHoldingLock.endStates;
   }
 }
