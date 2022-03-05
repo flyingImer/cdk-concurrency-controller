@@ -1,7 +1,7 @@
 import { Construct } from 'constructs';
 import { Duration } from 'monocdk';
 import { Table } from 'monocdk/aws-dynamodb';
-import { StateMachineFragment, State, INextable, JsonPath, Pass, Wait, WaitTime, Choice, Errors, Condition, RetryProps } from 'monocdk/aws-stepfunctions';
+import { StateMachineFragment, State, INextable, JsonPath, Pass, Wait, WaitTime, Choice, Errors, Condition, RetryProps, IChainable } from 'monocdk/aws-stepfunctions';
 import { DynamoUpdateItem, DynamoAttributeValue, DynamoReturnValues, DynamoPutItem, DynamoGetItem, DynamoProjectionExpression } from 'monocdk/aws-stepfunctions-tasks';
 
 export interface LockFragmentCommonProps {
@@ -66,32 +66,15 @@ export class AcquireLockFragment extends StateMachineFragment {
       time: WaitTime.duration(Duration.seconds(3)),
     });
 
-    const checkIfLockAlreadyAcquired = new Choice(this, 'CheckIfLockAlreadyAcquired', {
-      comment: 'This state checks to see if the current execution already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.',
-    });
-
-    const getCurrentLockRecord = new DynamoGetItem(this, 'GetCurrentLockRecord', {
-      comment: 'This state is called when the execution is unable to acquire a lock because there limit has either been exceeded or because this execution already holds a lock. I that case, this task loads info from DDB for the current lock item so that the right decision can be made in subsequent states.',
-      table: locks,
-      key: {
-        // TODO: dynamic lock name from state machine running context, e.g., input
-        [locks.schema().partitionKey.name]: DynamoAttributeValue.fromString(lockName),
-      },
-      expressionAttributeNames: {
-        '#lockownerid.$': '$$.Execution.Id', // TODO: JsonPath.stringAt?
-      },
-      projectionExpression: [
-        new DynamoProjectionExpression().withAttribute('#lockownerid'),
-      ],
-      resultSelector: {
-        'Item.$': '$.Item',
-        'ItemString.$': 'States.JsonToString($.Item)',
-      },
-      resultPath: '$.lockinfo.currentlockitem',
-      consistentRead: true,
-    });
-
     const lockAcquired = new Pass(this, 'LockAcquired', {});
+
+    const checkIfLockAlreadyAcquired = new CheckIfHoldingLockFragment(this, 'CheckIfLockIsHeld', {
+      locks,
+      lockName,
+      lockOwnerId: '$$.Execution.Id', // TODO: JsonPath.stringAt?
+      ifHeldAction: lockAcquisitionConfirmedContinue.next(lockAcquired),
+      ifNotHeldAction: waitToGetLock.next(acquireLock),
+    });
 
     this.startState = acquireLock;
     this.endStates = acquireLock.addRetry({
@@ -108,17 +91,7 @@ export class AcquireLockFragment extends StateMachineFragment {
         resultPath: '$.lockinfo.acquisitionerror',
       },
     ).addCatch(
-      getCurrentLockRecord.next(
-        checkIfLockAlreadyAcquired.when(
-          Condition.and(
-            Condition.isPresent('$.lockinfo.currentlockitem.ItemString'),
-            Condition.stringMatches('$.lockinfo.currentlockitem.ItemString', '*Z*'),
-          ),
-          lockAcquisitionConfirmedContinue.next(lockAcquired),
-        ).otherwise(
-          waitToGetLock.next(acquireLock),
-        ),
-      ),
+      checkIfLockAlreadyAcquired,
       {
         errors: ['DynamoDB.ConditionalCheckFailedException'],
         resultPath: '$.lockinfo.acquisitionerror',
@@ -186,21 +159,33 @@ export class ReleaseLockFragment extends StateMachineFragment {
   }
 }
 
-export interface GetLockDetailsFragmentProps extends Omit<LockFragmentCommonProps, 'lockCountAttrName'> {
+export interface CheckIfHoldingLockFragmentProps extends Omit<LockFragmentCommonProps, 'lockCountAttrName'> {
   readonly lockOwnerId: string;
-  readonly resultPath?: string;
+  /**
+   * @default - '$.lockinfo.currentlockitem'
+   */
+  readonly getLockResultPath?: string;
+  /**
+   * @default - no retry
+   */
+  readonly getLockErrorsHandling?: RetryProps[];
+  readonly ifHeldAction: IChainable;
+  /**
+   * @default - if detected not held, an execution error will be raised.
+   */
+  readonly ifNotHeldAction?: IChainable;
 }
 
-export class GetLockDetailsFragment extends StateMachineFragment {
+export class CheckIfHoldingLockFragment extends StateMachineFragment {
   public readonly startState: State;
   public readonly endStates: INextable[];
 
-  constructor(scope: Construct, id: string, props: GetLockDetailsFragmentProps) {
+  constructor(scope: Construct, id: string, props: CheckIfHoldingLockFragmentProps) {
     super(scope, id);
 
-    const { locks, lockName, lockOwnerId, resultPath } = props;
+    const { locks, lockName, lockOwnerId, getLockResultPath, getLockErrorsHandling, ifHeldAction, ifNotHeldAction } = props;
 
-    this.startState = new DynamoGetItem(this, 'GetLockDetails', {
+    const getLockDetails = new DynamoGetItem(this, 'GetLockDetails', {
       comment: 'Get info from DDB for the lock item.',
       table: locks,
       key: {
@@ -217,9 +202,27 @@ export class GetLockDetailsFragment extends StateMachineFragment {
         'Item.$': '$.Item',
         'ItemString.$': 'States.JsonToString($.Item)',
       },
-      resultPath: resultPath || '$.lockinfo.currentlockitem',
+      resultPath: getLockResultPath || '$.lockinfo.currentlockitem',
       consistentRead: true,
     });
-    this.endStates = this.startState.endStates;
+
+    const checkIfLockHeld = new Choice(this, 'CheckIfLockIsHeld', {
+      comment: 'This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.',
+    }).when(
+      Condition.and(
+        Condition.isPresent('$.lockinfo.currentlockitem.ItemString'),
+        Condition.stringMatches('$.lockinfo.currentlockitem.ItemString', '*Z*'),
+      ),
+      ifHeldAction,
+    );
+    if (ifNotHeldAction) {
+      checkIfLockHeld.otherwise(ifNotHeldAction);
+    };
+
+    this.startState = getLockDetails;
+    if (!!getLockErrorsHandling && getLockErrorsHandling.length > 0) {
+      getLockErrorsHandling.forEach((retryProps) => getLockDetails.addRetry(retryProps));
+    }
+    this.endStates = getLockDetails.next(checkIfLockHeld).endStates;
   }
 }

@@ -4,9 +4,9 @@ import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
 import { Rule } from 'monocdk/aws-events';
 import { SfnStateMachine } from 'monocdk/aws-events-targets';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { Choice, Condition, Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Pass, Result, StateMachine, Succeed, TaskInput } from 'monocdk/aws-stepfunctions';
+import { Errors, IChainable, IntegrationPattern, IStateMachine, JsonPath, LogLevel, Map, Pass, Result, StateMachine, Succeed, TaskInput } from 'monocdk/aws-stepfunctions';
 import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
-import { AcquireLockFragment, GetLockDetailsFragment, ReleaseLockFragment } from './fragments';
+import { AcquireLockFragment, CheckIfHoldingLockFragment, ReleaseLockFragment } from './fragments';
 
 export interface DistributedSemaphoreProps {
   readonly doWork: IChainable;
@@ -88,17 +88,7 @@ export class DistributedSemaphore extends Construct {
   }
 
   private buildCleanup(locks: Table, lockName: string, lockCountAttrName: string): IChainable {
-    const getCurrentLockItem = new GetLockDetailsFragment(this, 'GetCurrentLockItem', {
-      locks,
-      lockName,
-      lockOwnerId: '$.detail.executionArn',
-    });
-
-    const checkIfLockHeld = new Choice(this, 'CheckIfLockIsHeld', {
-      comment: 'This state checks to see if the execution in question holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock',
-    });
-
-    const successState = new Succeed(this, 'SuccessStateCleanup'); // FIXME: correct the name
+    const lockNotHeldContinue = new Succeed(this, 'LockNotHeldContinue');
     const cleanUpLock = new ReleaseLockFragment(this, 'CleanUpLock', {
       locks,
       lockName,
@@ -111,20 +101,21 @@ export class DistributedSemaphore extends Construct {
       },
     });
 
-    return getCurrentLockItem.toSingleState().addRetry({
-      errors: [Errors.ALL],
-      maxAttempts: 20,
-      interval: Duration.seconds(5),
-      backoffRate: 1.4,
-    }).next(
-      checkIfLockHeld.when(
-        Condition.and(
-          Condition.isPresent('$.lockinfo.currentlockitem.ItemString'),
-          Condition.stringMatches('$.lockinfo.currentlockitem.ItemString', '*Z*'),
-        ),
-        cleanUpLock,
-      ).otherwise(successState),
-    );
+    const checkIfHoldingLock = new CheckIfHoldingLockFragment(this, 'CheckIfHoldingLock', {
+      locks,
+      lockName,
+      lockOwnerId: '$.detail.executionArn',
+      getLockErrorsHandling: [{
+        errors: [Errors.ALL],
+        maxAttempts: 20,
+        interval: Duration.seconds(5),
+        backoffRate: 1.4,
+      }],
+      ifHeldAction: cleanUpLock,
+      ifNotHeldAction: lockNotHeldContinue,
+    });
+
+    return checkIfHoldingLock;
   }
 
   private buildTesting(concurrentInputs: number, targetStateMachine: IStateMachine): IChainable {
