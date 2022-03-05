@@ -8,6 +8,10 @@ export interface LockFragmentCommonProps {
   readonly locks: Table;
   readonly lockName: string;
   readonly lockCountAttrName: string;
+  /**
+   * @default - '$$.Execution.Id'
+   */
+  readonly lockOwnerId?: string;
 }
 
 export interface AcquireLockFragmentProps extends LockFragmentCommonProps {
@@ -21,7 +25,7 @@ export class AcquireLockFragment extends StateMachineFragment {
   constructor(scope: Construct, id: string, props: AcquireLockFragmentProps) {
     super(scope, id);
 
-    const { locks, lockName, lockCountAttrName, concurrencyLimit } = props;
+    const { locks, lockName, lockCountAttrName, lockOwnerId = '$$.Execution.Id', concurrencyLimit } = props;
 
     const acquireLock = new DynamoUpdateItem(this, 'AcquireLock', {
       comment: 'acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn\'t increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.',
@@ -32,7 +36,7 @@ export class AcquireLockFragment extends StateMachineFragment {
       },
       expressionAttributeNames: {
         '#currentlockcount': lockCountAttrName,
-        '#lockownerid.$': '$$.Execution.Id',
+        '#lockownerid.$': lockOwnerId,
       },
       expressionAttributeValues: {
         ':increase': DynamoAttributeValue.fromNumber(1),
@@ -71,7 +75,7 @@ export class AcquireLockFragment extends StateMachineFragment {
     const checkIfLockAlreadyAcquired = new CheckIfHoldingLockFragment(this, 'CheckIfLockIsHeld', {
       locks,
       lockName,
-      lockOwnerId: '$$.Execution.Id', // TODO: JsonPath.stringAt?
+      lockOwnerId: lockOwnerId,
       ifHeldAction: lockAcquisitionConfirmedContinue.next(lockAcquired),
       ifNotHeldAction: waitToGetLock.next(acquireLock),
     });
@@ -103,7 +107,6 @@ export class AcquireLockFragment extends StateMachineFragment {
 }
 
 export interface ReleaseLockFragmentProps extends LockFragmentCommonProps {
-  readonly lockOwnerId?: string;
   /**
    * define how to handle Errors.ALL
    */
@@ -117,7 +120,7 @@ export class ReleaseLockFragment extends StateMachineFragment {
   constructor(scope: Construct, id: string, props: ReleaseLockFragmentProps) {
     super(scope, id);
 
-    const { locks, lockName, lockCountAttrName, lockOwnerId, errorsAllRetryProps } = props;
+    const { locks, lockName, lockCountAttrName, lockOwnerId = '$$.Execution.Id', errorsAllRetryProps } = props;
 
     const releaseLock = new DynamoUpdateItem(this, 'ReleaseLock', {
       comment: 'If this lockowerid is still there, then clean it up and release the lock',
@@ -127,7 +130,7 @@ export class ReleaseLockFragment extends StateMachineFragment {
       },
       expressionAttributeNames: {
         '#currentlockcount': lockCountAttrName,
-        '#lockownerid.$': lockOwnerId || '$$.Execution.Id',
+        '#lockownerid.$': lockOwnerId,
       },
       expressionAttributeValues: {
         ':decrease': DynamoAttributeValue.fromNumber(1),
