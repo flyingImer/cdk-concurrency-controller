@@ -230,9 +230,7 @@ export class CheckIfHoldingLockFragment extends StateMachineFragment {
   }
 }
 
-export interface CleanUpLockFragmentProps extends LockFragmentCommonProps {
-  readonly lockOwnerId: string;
-}
+export interface CleanUpLockFragmentProps extends LockFragmentCommonProps { }
 
 export class CleanUpLockFragment extends StateMachineFragment {
   public readonly startState: State;
@@ -241,7 +239,7 @@ export class CleanUpLockFragment extends StateMachineFragment {
   constructor(scope: Construct, id: string, props: CleanUpLockFragmentProps) {
     super(scope, id);
 
-    const { locks, lockName, lockCountAttrName, lockOwnerId } = props;
+    const { locks, lockName, lockCountAttrName, lockOwnerId = '$$.Execution.Id' } = props;
 
     const lockNotHeldContinue = new Succeed(this, 'LockNotHeldContinue');
     const cleanUpLock = new ReleaseLockFragment(this, 'CleanUpLock', {
