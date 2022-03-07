@@ -10,6 +10,18 @@ import { AcquireLockFragment, CleanUpLockFragment, ReleaseLockFragment } from '.
 
 export interface DistributedSemaphoreProps {
   readonly doWork: IChainable;
+  /**
+   * @default - 'DefaultLock'
+   */
+  readonly lockName?: string;
+  /**
+   * @default - 'CurrentLockCount'
+   */
+  readonly lockCountAttributeName?: string;
+  /**
+   * @default - 5
+   */
+  readonly concurrencyLimit?: number;
 }
 export class DistributedSemaphore extends Construct {
   private readonly doWork: IChainable;
@@ -24,9 +36,11 @@ export class DistributedSemaphore extends Construct {
       billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
+    const { lockName = 'DefaultLock', lockCountAttributeName = 'CurrentLockCount', concurrencyLimit = 5 } = props;
+
     // TODO: maybe expose via StateMachineFragment?
     const semaphore = new StateMachine(this, 'Semaphore', {
-      definition: this.buildSemaphoreDefinition(locks, 'MySemaphore', 'currentlockcount', 5),
+      definition: this.buildSemaphoreDefinition(locks, lockName, lockCountAttributeName, concurrencyLimit),
       tracingEnabled: true,
       logs: {
         destination: new LogGroup(this, 'SemaphoreLogGroup', {
@@ -39,7 +53,7 @@ export class DistributedSemaphore extends Construct {
     });
 
     const semaphoreCleanup = new StateMachine(this, 'SemaphoreCleanup', {
-      definition: this.buildCleanup(locks, 'MySemaphore', 'currentlockcount'),
+      definition: this.buildCleanup(locks, lockName, lockCountAttributeName),
       tracingEnabled: true,
       logs: {
         destination: new LogGroup(this, 'SemaphoreCleanupLogGroup', {

@@ -111,23 +111,23 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"}},\\"TableName\\":\\"",
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConditionExpression\\":\\"currentlockcount <> :limit and attribute_not_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"currentlockcount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N\\":\\"5\\"},\\":lockacquiredtime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime\\"}},\\"AcquireMyLock: WaitToGetLock\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.\\",\\"Seconds\\":3,\\"Next\\":\\"AcquireMyLock: AcquireLock\\"},\\"AcquireMyLock: InitializeLockItem\\":{\\"Next\\":\\"AcquireMyLock: AcquireLock\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"Next\\":\\"AcquireMyLock: AcquireLock\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"Resource\\":\\"arn:",
+              "\\",\\"ConditionExpression\\":\\"#currentlockcount <> :limit and attribute_not_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentLockCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N\\":\\"5\\"},\\":lockacquiredtime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime\\"}},\\"AcquireMyLock: WaitToGetLock\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.\\",\\"Seconds\\":3,\\"Next\\":\\"AcquireMyLock: AcquireLock\\"},\\"AcquireMyLock: InitializeLockItem\\":{\\"Next\\":\\"AcquireMyLock: AcquireLock\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"Next\\":\\"AcquireMyLock: AcquireLock\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"},\\"currentlockcount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
+              ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"},\\"CurrentLockCount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConditionExpression\\":\\"LockName <> :lockname\\",\\"ExpressionAttributeValues\\":{\\":lockname\\":{\\"S\\":\\"MySemaphore\\"}}}},\\"AcquireMyLock: LockAcquired\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"AcquireMyLock: LockAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"Next\\":\\"AcquireMyLock: LockAcquired\\"},\\"AcquireMyLock: CheckIfLockIsHeld\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"AcquireMyLock: LockAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"AcquireMyLock: WaitToGetLock\\"},\\"AcquireMyLock: GetLockDetails\\":{\\"Next\\":\\"AcquireMyLock: CheckIfLockIsHeld\\",\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"ResultSelector\\":{\\"Item.$\\":\\"$.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.Item)\\"},\\"Resource\\":\\"arn:",
+              "\\",\\"ConditionExpression\\":\\"LockName <> :lockname\\",\\"ExpressionAttributeValues\\":{\\":lockname\\":{\\"S\\":\\"DefaultLock\\"}}}},\\"AcquireMyLock: LockAcquired\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"AcquireMyLock: LockAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"Next\\":\\"AcquireMyLock: LockAcquired\\"},\\"AcquireMyLock: CheckIfLockIsHeld\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"AcquireMyLock: LockAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"AcquireMyLock: WaitToGetLock\\"},\\"AcquireMyLock: GetLockDetails\\":{\\"Next\\":\\"AcquireMyLock: CheckIfLockIsHeld\\",\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"ResultSelector\\":{\\"Item.$\\":\\"$.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.Item)\\"},\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"}},\\"TableName\\":\\"",
+              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
@@ -135,11 +135,11 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"}},\\"TableName\\":\\"",
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"currentlockcount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseMyLock: LockReleased\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"ReleaseMyLock: LockNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseMyLock: LockReleased\\"}}}]}}}",
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentLockCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseMyLock: LockReleased\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"ReleaseMyLock: LockNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseMyLock: LockReleased\\"}}}]}}}",
             ],
           ],
         },
@@ -388,7 +388,7 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"}},\\"TableName\\":\\"",
+              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
@@ -396,11 +396,11 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"MySemaphore\\"}},\\"TableName\\":\\"",
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreLockTable45D69AC1",
               },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"currentlockcount\\",\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"LockReleased\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"LockNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"LockReleased\\"}}}",
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentLockCount\\",\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"LockReleased\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"LockNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"LockReleased\\"}}}",
             ],
           ],
         },

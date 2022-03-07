@@ -116,6 +116,9 @@ const distributedSemaphoreProps: DistributedSemaphoreProps = { ... }
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.doWork">doWork</a></code> | <code>monocdk.aws_stepfunctions.IChainable</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.concurrencyLimit">concurrencyLimit</a></code> | <code>number</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.lockCountAttributeName">lockCountAttributeName</a></code> | <code>string</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.lockName">lockName</a></code> | <code>string</code> | *No description.* |
 
 ---
 
@@ -126,6 +129,39 @@ public readonly doWork: IChainable;
 ```
 
 - *Type:* monocdk.aws_stepfunctions.IChainable
+
+---
+
+##### `concurrencyLimit`<sup>Optional</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.concurrencyLimit"></a>
+
+```typescript
+public readonly concurrencyLimit: number;
+```
+
+- *Type:* number
+- *Default:* 5
+
+---
+
+##### `lockCountAttributeName`<sup>Optional</sup> <a name="lockCountAttributeName" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.lockCountAttributeName"></a>
+
+```typescript
+public readonly lockCountAttributeName: string;
+```
+
+- *Type:* string
+- *Default:* 'CurrentLockCount'
+
+---
+
+##### `lockName`<sup>Optional</sup> <a name="lockName" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.lockName"></a>
+
+```typescript
+public readonly lockName: string;
+```
+
+- *Type:* string
+- *Default:* 'DefaultLock'
 
 ---
 

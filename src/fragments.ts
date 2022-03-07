@@ -44,7 +44,7 @@ export class AcquireLockFragment extends StateMachineFragment {
         ':lockacquiredtime': DynamoAttributeValue.fromString(JsonPath.stringAt('$$.State.EnteredTime')),
       },
       updateExpression: 'SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime',
-      conditionExpression: 'currentlockcount <> :limit and attribute_not_exists(#lockownerid)', // TODO: should currentlockcount to be #currentlockcount?
+      conditionExpression: '#currentlockcount <> :limit and attribute_not_exists(#lockownerid)',
       returnValues: DynamoReturnValues.UPDATED_NEW,
     });
 
