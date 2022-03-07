@@ -90,6 +90,14 @@
         }
       ]
     },
+    "contributors:update": {
+      "name": "contributors:update",
+      "steps": [
+        {
+          "exec": "all-contributors check | grep \"Missing contributors\" -A 1 | tail -n1 | sed -e \"s/,//g\" | xargs -n1 | grep -v \"[bot]\" | xargs -n1 -I{} all-contributors add {} code"
+        }
+      ]
+    },
     "default": {
       "name": "default",
       "description": "Synthesize project files",
@@ -271,7 +279,7 @@
           "exec": "yarn install --check-files"
         },
         {
-          "exec": "yarn upgrade @monocdk-experiment/assert @types/jest @types/node @typescript-eslint/eslint-plugin @typescript-eslint/parser constructs eslint-import-resolver-node eslint-import-resolver-typescript eslint-plugin-import eslint jest jest-junit jsii jsii-diff jsii-docgen json-schema monocdk npm-check-updates standard-version ts-jest typescript constructs monocdk"
+          "exec": "yarn upgrade @monocdk-experiment/assert @types/jest @types/node @typescript-eslint/eslint-plugin @typescript-eslint/parser all-contributors-cli constructs eslint-import-resolver-node eslint-import-resolver-typescript eslint-plugin-import eslint jest jest-junit jsii jsii-diff jsii-docgen json-schema monocdk npm-check-updates standard-version ts-jest typescript constructs monocdk"
         },
         {
           "exec": "npx projen"

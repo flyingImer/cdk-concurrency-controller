@@ -25,6 +25,10 @@
       "type": "build"
     },
     {
+      "name": "all-contributors-cli",
+      "type": "build"
+    },
+    {
       "name": "constructs",
       "version": "3.3.69",
       "type": "build"

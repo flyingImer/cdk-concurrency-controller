@@ -32,6 +32,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
     `monocdk@${CDK_VERSION}`,
     `@monocdk-experiment/assert@${CDK_VERSION}`,
     `constructs@${CONSTRUCT_VERSION}`,
+    'all-contributors-cli', // for contributors
   ], /* Build dependencies for this module. */
   peerDeps: [
     `monocdk@^${CDK_VERSION}`,
@@ -46,5 +47,11 @@ project.deps.addDependency(`constructs@^${CONSTRUCT_VERSION}`, DependencyType.PE
 project.tsconfigDev.addInclude('example/**/*.ts');
 // project.gitignore.exclude('.env');
 project.gitignore.exclude('example/**/*.js', 'example/**/*.d.ts', 'example/cdk.out');
+
+// for contributors
+project.addTask('contributors:update', {
+  exec: 'all-contributors check | grep "Missing contributors" -A 1 | tail -n1 | sed -e "s/,//g" | xargs -n1 | grep -v "[bot]" | xargs -n1 -I{} all-contributors add {} code',
+});
+project.npmignore.exclude('/.all-contributorsrc');
 
 project.synth();
