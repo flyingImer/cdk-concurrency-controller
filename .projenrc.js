@@ -17,6 +17,8 @@ const project = new awscdk.AwsCdkConstructLibrary({
     allowedUsernames: ['projen-automation'],
   },
 
+  autoApproveUpgrades: true,
+
   defaultReleaseBranch: 'main',
   name: 'cdk-concurrency-controller',
   repositoryUrl: 'https://github.com/flyingImer/cdk-concurrency-controller.git',
