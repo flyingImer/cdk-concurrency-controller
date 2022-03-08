@@ -14,7 +14,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
   cdkDependenciesAsDeps: false,
 
   autoApproveOptions: {
-    allowedUsernames: ['projen-automation'],
+    allowedUsernames: ['flyingImer'],
   },
 
   autoApproveUpgrades: true,
