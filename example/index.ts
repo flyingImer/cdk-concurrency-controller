@@ -6,8 +6,8 @@ import { SfnStateMachine } from 'monocdk/aws-events-targets';
 import { Runtime } from 'monocdk/aws-lambda';
 import { PythonFunction } from 'monocdk/aws-lambda-python';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Chain } from 'monocdk/aws-stepfunctions';
-import { LambdaInvoke } from 'monocdk/aws-stepfunctions-tasks';
+import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Chain, Map, Errors, IntegrationPattern, IStateMachine, Result } from 'monocdk/aws-stepfunctions';
+import { LambdaInvoke, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 import { DistributedSemaphore } from '../src/index';
 import { DistributedSemaphore as DS } from '../src/semaphore';
 
@@ -119,6 +119,19 @@ class TestStackV2 extends Stack {
         },
       },
     });
+
+    new StateMachine(this, 'SemaphoreTesting', {
+      definition: this.buildTesting(100, semaphore),
+      tracingEnabled: true,
+      logs: {
+        destination: new LogGroup(this, 'SemaphoreTestingLogGroup', {
+          retention: RetentionDays.TWO_MONTHS,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+        includeExecutionData: true,
+        level: LogLevel.ALL,
+      },
+    });
   }
 
   private buildCleanup(ds: DS): IChainable {
@@ -146,6 +159,58 @@ class TestStackV2 extends Stack {
     });
 
     return prev;
+  }
+
+  private buildTesting(concurrentInputs: number, targetStateMachine: IStateMachine): IChainable {
+    const generateDefaultInput = new Pass(this, 'GenerateTestingInput', {
+      parameters: {
+        iterations: Array.from({ length: concurrentInputs }, (_, i) => i + 1),
+      },
+    });
+
+    const startInParallel = new Map(this, 'StartInParallel', {
+      maxConcurrency: 0,
+      itemsPath: '$.iterations',
+      parameters: {
+        accountId: JsonPath.stringAt('$$.Map.Item.Value'),
+        region: 'us-east-1',
+      },
+    });
+
+    const runChildStateMachine = new StepFunctionsStartExecution(this, 'RunChildStateMachine', {
+      stateMachine: targetStateMachine,
+      integrationPattern: IntegrationPattern.RUN_JOB,
+      input: TaskInput.fromObject({
+        accountId: JsonPath.stringAt('$.accountId'),
+        region: JsonPath.stringAt('$.region'),
+      }),
+      resultSelector: {
+        Nothing: 'Nothing',
+      },
+    });
+
+    const clearResults = new Pass(this, 'ClearResults', {
+      result: Result.fromString('Done'),
+    });
+
+    return generateDefaultInput.next(
+      startInParallel.iterator(
+        runChildStateMachine.addRetry({
+          errors: ['StepFunctions.ExecutionAlreadyExistsException'],
+          maxAttempts: 1,
+          interval: Duration.seconds(1),
+          backoffRate: 5,
+        }).addRetry({
+          errors: [Errors.ALL],
+          maxAttempts: 12,
+          interval: Duration.seconds(1),
+          backoffRate: 2,
+        }).addCatch(clearResults, {
+          errors: ['States.TaskFailed'],
+          resultPath: '$.stateoutput.RunChildStateMachine',
+        }).next(clearResults),
+      ),
+    );
   }
 }
 
