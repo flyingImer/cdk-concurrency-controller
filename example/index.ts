@@ -1,10 +1,12 @@
 // TODO: migrate Construct for cdk v2
 import * as path from 'path';
 import { Construct, Stack, StackProps, App, Duration, RemovalPolicy } from 'monocdk';
+import { Rule } from 'monocdk/aws-events';
+import { SfnStateMachine } from 'monocdk/aws-events-targets';
 import { Runtime } from 'monocdk/aws-lambda';
 import { PythonFunction } from 'monocdk/aws-lambda-python';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { TaskInput, JsonPath, StateMachine, LogLevel, Pass } from 'monocdk/aws-stepfunctions';
+import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Chain } from 'monocdk/aws-stepfunctions';
 import { LambdaInvoke } from 'monocdk/aws-stepfunctions-tasks';
 import { DistributedSemaphore } from '../src/index';
 import { DistributedSemaphore as DS } from '../src/semaphore';
@@ -37,14 +39,15 @@ class TestStack extends Stack {
 class TestStackV2 extends Stack {
   constructor(scope: Construct, id: string, props: StackProps = {}) {
     super(scope, id, props);
-    const doWork = new LambdaInvoke(this, 'DoWork', {
-      lambdaFunction: new PythonFunction(this, 'DoWorkLambda', {
-        entry: path.join(__dirname, 'lambda'),
-        index: 'do_work_function/app.py',
-        handler: 'lambda_handler',
-        runtime: Runtime.PYTHON_3_8,
-        timeout: Duration.seconds(60),
-      }),
+    const lambda = new PythonFunction(this, 'DoWorkLambda', {
+      entry: path.join(__dirname, 'lambda'),
+      index: 'do_work_function/app.py',
+      handler: 'lambda_handler',
+      runtime: Runtime.PYTHON_3_8,
+      timeout: Duration.seconds(60),
+    });
+    const doWorkProps = {
+      lambdaFunction: lambda,
       payload: TaskInput.fromObject({
         Input: JsonPath.stringAt('$'),
       }),
@@ -53,7 +56,9 @@ class TestStackV2 extends Stack {
       },
       retryOnServiceExceptions: false,
       resultPath: '$.workResult',
-    });
+    };
+    const doWork = new LambdaInvoke(this, 'DoWork', doWorkProps);
+    const doWork2 = new LambdaInvoke(this, 'DoWork2', doWorkProps);
     const aSemaphoreName = JsonPath.format(
       '{}-{}-getCall',
       JsonPath.stringAt('$.accountId'),
@@ -66,7 +71,7 @@ class TestStackV2 extends Stack {
       ],
     });
 
-    new StateMachine(this, 'Semaphore', {
+    const semaphore = new StateMachine(this, 'Semaphore', {
       definition: ds.acquire().toSingleState().next(
         doWork,
       ).next(
@@ -75,6 +80,8 @@ class TestStackV2 extends Stack {
         ds.acquire({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
       ).next(
         new Pass(this, 'DoNothing'),
+      ).next(
+        doWork2,
       ).next(
         ds.release({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
       ),
@@ -88,6 +95,57 @@ class TestStackV2 extends Stack {
         level: LogLevel.ALL,
       },
     });
+
+    const semaphoreCleanup = new StateMachine(this, 'SemaphoreCleanup', {
+      definition: this.buildCleanup(ds),
+      tracingEnabled: true,
+      logs: {
+        destination: new LogGroup(this, 'SemaphoreCleanupLogGroup', {
+          retention: RetentionDays.TWO_MONTHS,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+        includeExecutionData: true,
+        level: LogLevel.ALL,
+      },
+    });
+
+    new Rule(this, 'RunForIncomplete', {
+      targets: [new SfnStateMachine(semaphoreCleanup)],
+      eventPattern: {
+        source: ['aws.states'],
+        detail: {
+          stateMachineArn: [semaphore.stateMachineArn],
+          status: ['FAILED', 'TIMED_OUT', 'ABORTED'],
+        },
+      },
+    });
+  }
+
+  private buildCleanup(ds: DS): IChainable {
+    const generateDefaultInput = new Pass(this, 'GenerateDefaultInput', {
+      parameters: {
+        OriginalInput: JsonPath.stringToJson(JsonPath.stringAt('$$.Execution.Input.detail.input')),
+      },
+      outputPath: '$.OriginalInput',
+    });
+
+    let prev = Chain.start(generateDefaultInput);
+    ds.semaphoreNames.map(
+      name => ds.release({
+        name,
+        userId: '$$.Execution.Input.detail.executionArn',
+        checkSemaphoreUseFirst: true,
+        retryStrategy: {
+          interval: Duration.seconds(5),
+          maxAttempts: 20,
+          backoffRate: 1.4,
+        },
+      }).toSingleState(),
+    ).forEach(curr => {
+      prev = prev.next(curr);
+    });
+
+    return prev;
   }
 }
 

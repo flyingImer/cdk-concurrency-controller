@@ -120,7 +120,7 @@ export class AcquireSemaphoreFragment extends CleanResultSingleStateFragment {
       },
       expressionAttributeNames: {
         '#currentlockcount': semaphoreTable.countAttributeName,
-        '#lockownerid.$': semaphoreUserId,
+        '#lockownerid.$': semaphoreUserId, // TODO: remove '.$' to allow JsonPath expressions?
       },
       expressionAttributeValues: {
         ':increase': DynamoAttributeValue.fromNumber(1),

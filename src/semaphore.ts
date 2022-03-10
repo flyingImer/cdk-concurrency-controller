@@ -90,6 +90,10 @@ export class DistributedSemaphore extends Construct {
     });
   }
 
+  public get semaphoreNames(): string[] {
+    return Array.from(this.semaphoreMap.keys());
+  }
+
   private validateSemaphoreUseOptions(options: SemaphoreUseOptions) {
     if (!this.semaphoreMap.has(options.name)) {
       throw new Error(`Semaphore ${options.name} is not defined.`);
