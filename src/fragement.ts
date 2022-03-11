@@ -333,8 +333,10 @@ class CheckIfSemaphoreUsedByUserFragment extends CleanResultSingleStateFragment 
     } = props;
 
     // TODO: double check if input is persisted
-    const outputKey = 'ItemString';
-    const outputField = `${outcomePath}.${outputKey}`;
+    const itemObjectKey = 'Item';
+    const itemStringKey = 'ItemString';
+    const itemObjectPath = `${outcomePath}.${itemObjectKey}`;
+    const itemStringPath = `${outcomePath}.${itemStringKey}`;
 
     const getSemaphoreUse = new DynamoGetItem(this, 'GetSemaphoreUse', {
       comment: 'Get info from DDB for the lock item.',
@@ -348,12 +350,18 @@ class CheckIfSemaphoreUsedByUserFragment extends CleanResultSingleStateFragment 
       projectionExpression: [
         new DynamoProjectionExpression().withAttribute('#lockownerid'),
       ],
-      resultSelector: {
-        'Item.$': '$.Item',
-        [`${outputKey}.$`]: 'States.JsonToString($.Item)',
-      },
       resultPath: outcomePath,
       consistentRead: true,
+    });
+
+    const CheckIfFoundSemaphore = new Choice(this, 'CheckIfFoundSemaphore');
+
+    const prepareInput = new Pass(this, 'PrepareInput', {
+      parameters: {
+        Item: JsonPath.objectAt(itemObjectPath),
+        [itemStringKey]: JsonPath.jsonToString(JsonPath.objectAt(itemObjectPath)),
+      },
+      resultPath: outcomePath,
     });
 
     const checkIfFoundSemaphoreUse = new Choice(this, 'CheckIfFoundSemaphoreUse', {
@@ -365,12 +373,19 @@ class CheckIfSemaphoreUsedByUserFragment extends CleanResultSingleStateFragment 
       errors: [Errors.ALL],
       ...retryStrategy,
     }).next(
-      checkIfFoundSemaphoreUse.when(
-        Condition.and(
-          Condition.isPresent(outputField),
-          Condition.stringMatches(outputField, '*Z*'),
+      CheckIfFoundSemaphore.when(
+        Condition.isPresent(itemObjectPath),
+        prepareInput.next(
+          checkIfFoundSemaphoreUse.when(
+            Condition.and(
+              Condition.isPresent(itemStringPath),
+              Condition.stringMatches(itemStringPath, '*Z*'),
+            ),
+            foundAction,
+          ).otherwise(
+            notFoundAction,
+          ),
         ),
-        foundAction,
       ).otherwise(
         notFoundAction,
       ),
