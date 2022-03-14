@@ -126,7 +126,7 @@ class TestStack extends Stack {
           maxAttempts: 20,
           backoffRate: 1.4,
         },
-      }).toSingleState(),
+      }).toSingleState({ resultPath: JsonPath.DISCARD }),
     ).forEach(curr => {
       prev = prev.next(curr);
     });
