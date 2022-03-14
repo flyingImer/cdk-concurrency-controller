@@ -2,6 +2,195 @@
 
 ## Constructs <a name="Constructs" id="Constructs"></a>
 
+### AcquireSemaphoreFragment <a name="AcquireSemaphoreFragment" id="cdk-concurrency-controller.AcquireSemaphoreFragment"></a>
+
+#### Initializers <a name="Initializers" id="cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer"></a>
+
+```typescript
+import { AcquireSemaphoreFragment } from 'cdk-concurrency-controller'
+
+new AcquireSemaphoreFragment(scope: Construct, id: string, props: AcquireSemaphoreFragmentProps)
+```
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps">AcquireSemaphoreFragmentProps</a></code> | *No description.* |
+
+---
+
+##### `scope`<sup>Required</sup> <a name="scope" id="cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.scope"></a>
+
+- *Type:* monocdk.Construct
+
+---
+
+##### `id`<sup>Required</sup> <a name="id" id="cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.id"></a>
+
+- *Type:* string
+
+---
+
+##### `props`<sup>Required</sup> <a name="props" id="cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.props"></a>
+
+- *Type:* <a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps">AcquireSemaphoreFragmentProps</a>
+
+---
+
+#### Methods <a name="Methods" id="Methods"></a>
+
+| **Name** | **Description** |
+| --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.toString">toString</a></code> | Returns a string representation of this construct. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.next">next</a></code> | Continue normal execution with the given state. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.prefixStates">prefixStates</a></code> | Prefix the IDs of all states in this state machine fragment. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.toSingleState">toSingleState</a></code> | Wrap all states in this state machine fragment up into a single state. |
+
+---
+
+##### `toString` <a name="toString" id="cdk-concurrency-controller.AcquireSemaphoreFragment.toString"></a>
+
+```typescript
+public toString(): string
+```
+
+Returns a string representation of this construct.
+
+##### `next` <a name="next" id="cdk-concurrency-controller.AcquireSemaphoreFragment.next"></a>
+
+```typescript
+public next(next: IChainable): Chain
+```
+
+Continue normal execution with the given state.
+
+###### `next`<sup>Required</sup> <a name="next" id="cdk-concurrency-controller.AcquireSemaphoreFragment.next.parameter.next"></a>
+
+- *Type:* monocdk.aws_stepfunctions.IChainable
+
+---
+
+##### `prefixStates` <a name="prefixStates" id="cdk-concurrency-controller.AcquireSemaphoreFragment.prefixStates"></a>
+
+```typescript
+public prefixStates(prefix?: string): StateMachineFragment
+```
+
+Prefix the IDs of all states in this state machine fragment.
+
+Use this to avoid multiple copies of the state machine all having the same state IDs.
+
+###### `prefix`<sup>Optional</sup> <a name="prefix" id="cdk-concurrency-controller.AcquireSemaphoreFragment.prefixStates.parameter.prefix"></a>
+
+- *Type:* string
+
+The prefix to add.
+
+Will use construct ID by default.
+
+---
+
+##### `toSingleState` <a name="toSingleState" id="cdk-concurrency-controller.AcquireSemaphoreFragment.toSingleState"></a>
+
+```typescript
+public toSingleState(options?: SingleStateOptions): Parallel
+```
+
+Wrap all states in this state machine fragment up into a single state.
+
+This can be used to add retry or error handling onto this state machine fragment.  Be aware that this changes the result of the inner state machine to be an array with the result of the state machine in it. Adjust your paths accordingly. For example, change 'outputPath' to '$[0]'.
+
+###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.AcquireSemaphoreFragment.toSingleState.parameter.options"></a>
+
+- *Type:* monocdk.aws_stepfunctions.SingleStateOptions
+
+---
+
+#### Static Functions <a name="Static Functions" id="Static Functions"></a>
+
+| **Name** | **Description** |
+| --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct">isConstruct</a></code> | Return whether the given object is a Construct. |
+
+---
+
+##### `isConstruct` <a name="isConstruct" id="cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct"></a>
+
+```typescript
+import { AcquireSemaphoreFragment } from 'cdk-concurrency-controller'
+
+AcquireSemaphoreFragment.isConstruct(x: any)
+```
+
+Return whether the given object is a Construct.
+
+###### `x`<sup>Required</sup> <a name="x" id="cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct.parameter.x"></a>
+
+- *Type:* any
+
+---
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.endStates">endStates</a></code> | <code>monocdk.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.id">id</a></code> | <code>string</code> | Descriptive identifier for this chainable. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.startState">startState</a></code> | <code>monocdk.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
+
+---
+
+##### `node`<sup>Required</sup> <a name="node" id="cdk-concurrency-controller.AcquireSemaphoreFragment.property.node"></a>
+
+```typescript
+public readonly node: ConstructNode;
+```
+
+- *Type:* monocdk.ConstructNode
+
+The construct tree node associated with this construct.
+
+---
+
+##### `endStates`<sup>Required</sup> <a name="endStates" id="cdk-concurrency-controller.AcquireSemaphoreFragment.property.endStates"></a>
+
+```typescript
+public readonly endStates: INextable[];
+```
+
+- *Type:* monocdk.aws_stepfunctions.INextable[]
+
+The states to chain onto if this fragment is used.
+
+---
+
+##### `id`<sup>Required</sup> <a name="id" id="cdk-concurrency-controller.AcquireSemaphoreFragment.property.id"></a>
+
+```typescript
+public readonly id: string;
+```
+
+- *Type:* string
+
+Descriptive identifier for this chainable.
+
+---
+
+##### `startState`<sup>Required</sup> <a name="startState" id="cdk-concurrency-controller.AcquireSemaphoreFragment.property.startState"></a>
+
+```typescript
+public readonly startState: State;
+```
+
+- *Type:* monocdk.aws_stepfunctions.State
+
+The start state of this state machine fragment.
+
+---
+
+
 ### DistributedSemaphore <a name="DistributedSemaphore" id="cdk-concurrency-controller.DistributedSemaphore"></a>
 
 #### Initializers <a name="Initializers" id="cdk-concurrency-controller.DistributedSemaphore.Initializer"></a>
@@ -9,7 +198,7 @@
 ```typescript
 import { DistributedSemaphore } from 'cdk-concurrency-controller'
 
-new DistributedSemaphore(scope: Construct, id: string, props: DistributedSemaphoreProps)
+new DistributedSemaphore(scope: Construct, id: string, props?: DistributedSemaphoreProps)
 ```
 
 | **Name** | **Type** | **Description** |
@@ -32,7 +221,7 @@ new DistributedSemaphore(scope: Construct, id: string, props: DistributedSemapho
 
 ---
 
-##### `props`<sup>Required</sup> <a name="props" id="cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.props"></a>
+##### `props`<sup>Optional</sup> <a name="props" id="cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.props"></a>
 
 - *Type:* <a href="#cdk-concurrency-controller.DistributedSemaphoreProps">DistributedSemaphoreProps</a>
 
@@ -43,6 +232,8 @@ new DistributedSemaphore(scope: Construct, id: string, props: DistributedSemapho
 | **Name** | **Description** |
 | --- | --- |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.toString">toString</a></code> | Returns a string representation of this construct. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.acquire">acquire</a></code> | Acquire a permit for a limited resource. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.release">release</a></code> | Release the permit for the resource. |
 
 ---
 
@@ -53,6 +244,38 @@ public toString(): string
 ```
 
 Returns a string representation of this construct.
+
+##### `acquire` <a name="acquire" id="cdk-concurrency-controller.DistributedSemaphore.acquire"></a>
+
+```typescript
+public acquire(options?: AcquireOptions): StateMachineFragment
+```
+
+Acquire a permit for a limited resource.
+
+###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.DistributedSemaphore.acquire.parameter.options"></a>
+
+- *Type:* <a href="#cdk-concurrency-controller.AcquireOptions">AcquireOptions</a>
+
+use default semaphore if not specified.
+
+---
+
+##### `release` <a name="release" id="cdk-concurrency-controller.DistributedSemaphore.release"></a>
+
+```typescript
+public release(options?: ReleaseOptions): StateMachineFragment
+```
+
+Release the permit for the resource.
+
+###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.DistributedSemaphore.release.parameter.options"></a>
+
+- *Type:* <a href="#cdk-concurrency-controller.ReleaseOptions">ReleaseOptions</a>
+
+use default semaphore if not specified.
+
+---
 
 #### Static Functions <a name="Static Functions" id="Static Functions"></a>
 
@@ -83,6 +306,8 @@ Return whether the given object is a Construct.
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.semaphoreNames">semaphoreNames</a></code> | <code>string[]</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | *No description.* |
 
 ---
 
@@ -98,8 +323,468 @@ The construct tree node associated with this construct.
 
 ---
 
+##### `semaphoreNames`<sup>Required</sup> <a name="semaphoreNames" id="cdk-concurrency-controller.DistributedSemaphore.property.semaphoreNames"></a>
+
+```typescript
+public readonly semaphoreNames: string[];
+```
+
+- *Type:* string[]
+
+---
+
+##### `semaphoreTable`<sup>Required</sup> <a name="semaphoreTable" id="cdk-concurrency-controller.DistributedSemaphore.property.semaphoreTable"></a>
+
+```typescript
+public readonly semaphoreTable: SemaphoreTableDefinition;
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a>
+
+---
+
+
+### ReleaseSemaphoreFragment <a name="ReleaseSemaphoreFragment" id="cdk-concurrency-controller.ReleaseSemaphoreFragment"></a>
+
+#### Initializers <a name="Initializers" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer"></a>
+
+```typescript
+import { ReleaseSemaphoreFragment } from 'cdk-concurrency-controller'
+
+new ReleaseSemaphoreFragment(scope: Construct, id: string, props: ReleaseSemaphoreFragmentProps)
+```
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps">ReleaseSemaphoreFragmentProps</a></code> | *No description.* |
+
+---
+
+##### `scope`<sup>Required</sup> <a name="scope" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.scope"></a>
+
+- *Type:* monocdk.Construct
+
+---
+
+##### `id`<sup>Required</sup> <a name="id" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.id"></a>
+
+- *Type:* string
+
+---
+
+##### `props`<sup>Required</sup> <a name="props" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.props"></a>
+
+- *Type:* <a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps">ReleaseSemaphoreFragmentProps</a>
+
+---
+
+#### Methods <a name="Methods" id="Methods"></a>
+
+| **Name** | **Description** |
+| --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.toString">toString</a></code> | Returns a string representation of this construct. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.next">next</a></code> | Continue normal execution with the given state. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.prefixStates">prefixStates</a></code> | Prefix the IDs of all states in this state machine fragment. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.toSingleState">toSingleState</a></code> | Wrap all states in this state machine fragment up into a single state. |
+
+---
+
+##### `toString` <a name="toString" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.toString"></a>
+
+```typescript
+public toString(): string
+```
+
+Returns a string representation of this construct.
+
+##### `next` <a name="next" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.next"></a>
+
+```typescript
+public next(next: IChainable): Chain
+```
+
+Continue normal execution with the given state.
+
+###### `next`<sup>Required</sup> <a name="next" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.next.parameter.next"></a>
+
+- *Type:* monocdk.aws_stepfunctions.IChainable
+
+---
+
+##### `prefixStates` <a name="prefixStates" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.prefixStates"></a>
+
+```typescript
+public prefixStates(prefix?: string): StateMachineFragment
+```
+
+Prefix the IDs of all states in this state machine fragment.
+
+Use this to avoid multiple copies of the state machine all having the same state IDs.
+
+###### `prefix`<sup>Optional</sup> <a name="prefix" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.prefixStates.parameter.prefix"></a>
+
+- *Type:* string
+
+The prefix to add.
+
+Will use construct ID by default.
+
+---
+
+##### `toSingleState` <a name="toSingleState" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.toSingleState"></a>
+
+```typescript
+public toSingleState(options?: SingleStateOptions): Parallel
+```
+
+Wrap all states in this state machine fragment up into a single state.
+
+This can be used to add retry or error handling onto this state machine fragment.  Be aware that this changes the result of the inner state machine to be an array with the result of the state machine in it. Adjust your paths accordingly. For example, change 'outputPath' to '$[0]'.
+
+###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.toSingleState.parameter.options"></a>
+
+- *Type:* monocdk.aws_stepfunctions.SingleStateOptions
+
+---
+
+#### Static Functions <a name="Static Functions" id="Static Functions"></a>
+
+| **Name** | **Description** |
+| --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct">isConstruct</a></code> | Return whether the given object is a Construct. |
+
+---
+
+##### `isConstruct` <a name="isConstruct" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct"></a>
+
+```typescript
+import { ReleaseSemaphoreFragment } from 'cdk-concurrency-controller'
+
+ReleaseSemaphoreFragment.isConstruct(x: any)
+```
+
+Return whether the given object is a Construct.
+
+###### `x`<sup>Required</sup> <a name="x" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct.parameter.x"></a>
+
+- *Type:* any
+
+---
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.endStates">endStates</a></code> | <code>monocdk.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.id">id</a></code> | <code>string</code> | Descriptive identifier for this chainable. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.startState">startState</a></code> | <code>monocdk.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
+
+---
+
+##### `node`<sup>Required</sup> <a name="node" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.property.node"></a>
+
+```typescript
+public readonly node: ConstructNode;
+```
+
+- *Type:* monocdk.ConstructNode
+
+The construct tree node associated with this construct.
+
+---
+
+##### `endStates`<sup>Required</sup> <a name="endStates" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.property.endStates"></a>
+
+```typescript
+public readonly endStates: INextable[];
+```
+
+- *Type:* monocdk.aws_stepfunctions.INextable[]
+
+The states to chain onto if this fragment is used.
+
+---
+
+##### `id`<sup>Required</sup> <a name="id" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.property.id"></a>
+
+```typescript
+public readonly id: string;
+```
+
+- *Type:* string
+
+Descriptive identifier for this chainable.
+
+---
+
+##### `startState`<sup>Required</sup> <a name="startState" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.property.startState"></a>
+
+```typescript
+public readonly startState: State;
+```
+
+- *Type:* monocdk.aws_stepfunctions.State
+
+The start state of this state machine fragment.
+
+---
+
 
 ## Structs <a name="Structs" id="Structs"></a>
+
+### AcquireOptions <a name="AcquireOptions" id="cdk-concurrency-controller.AcquireOptions"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.AcquireOptions.Initializer"></a>
+
+```typescript
+import { AcquireOptions } from 'cdk-concurrency-controller'
+
+const acquireOptions: AcquireOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.waitTime">waitTime</a></code> | <code>monocdk.aws_stepfunctions.WaitTime</code> | The maximum wait duration for another try to acquire semaphore if not acquired in previous tries. |
+
+---
+
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.AcquireOptions.property.name"></a>
+
+```typescript
+public readonly name: string;
+```
+
+- *Type:* string
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+##### `userId`<sup>Required</sup> <a name="userId" id="cdk-concurrency-controller.AcquireOptions.property.userId"></a>
+
+```typescript
+public readonly userId: string;
+```
+
+- *Type:* string
+
+The semaphore user id to acquire/release resource usage.
+
+---
+
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.AcquireOptions.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
+##### `waitTime`<sup>Optional</sup> <a name="waitTime" id="cdk-concurrency-controller.AcquireOptions.property.waitTime"></a>
+
+```typescript
+public readonly waitTime: WaitTime;
+```
+
+- *Type:* monocdk.aws_stepfunctions.WaitTime
+- *Default:* Duration.seconds(3)
+
+The maximum wait duration for another try to acquire semaphore if not acquired in previous tries.
+
+---
+
+### AcquireSemaphoreFragmentProps <a name="AcquireSemaphoreFragmentProps" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.Initializer"></a>
+
+```typescript
+import { AcquireSemaphoreFragmentProps } from 'cdk-concurrency-controller'
+
+const acquireSemaphoreFragmentProps: AcquireSemaphoreFragmentProps = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.waitTime">waitTime</a></code> | <code>monocdk.aws_stepfunctions.WaitTime</code> | The maximum wait duration for another try to acquire semaphore if not acquired in previous tries. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit">concurrencyLimit</a></code> | <code>number</code> | The value for concurrency control. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
+
+---
+
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.name"></a>
+
+```typescript
+public readonly name: string;
+```
+
+- *Type:* string
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+##### `userId`<sup>Required</sup> <a name="userId" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.userId"></a>
+
+```typescript
+public readonly userId: string;
+```
+
+- *Type:* string
+
+The semaphore user id to acquire/release resource usage.
+
+---
+
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
+##### `waitTime`<sup>Optional</sup> <a name="waitTime" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.waitTime"></a>
+
+```typescript
+public readonly waitTime: WaitTime;
+```
+
+- *Type:* monocdk.aws_stepfunctions.WaitTime
+- *Default:* Duration.seconds(3)
+
+The maximum wait duration for another try to acquire semaphore if not acquired in previous tries.
+
+---
+
+##### `concurrencyLimit`<sup>Required</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit"></a>
+
+```typescript
+public readonly concurrencyLimit: number;
+```
+
+- *Type:* number
+
+The value for concurrency control.
+
+---
+
+##### `semaphoreTable`<sup>Required</sup> <a name="semaphoreTable" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.semaphoreTable"></a>
+
+```typescript
+public readonly semaphoreTable: SemaphoreTableDefinition;
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a>
+
+The DynamoDB table to use for the semaphore.
+
+---
+
+### AcquireSemaphoreOptions <a name="AcquireSemaphoreOptions" id="cdk-concurrency-controller.AcquireSemaphoreOptions"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.AcquireSemaphoreOptions.Initializer"></a>
+
+```typescript
+import { AcquireSemaphoreOptions } from 'cdk-concurrency-controller'
+
+const acquireSemaphoreOptions: AcquireSemaphoreOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.waitTime">waitTime</a></code> | <code>monocdk.aws_stepfunctions.WaitTime</code> | The maximum wait duration for another try to acquire semaphore if not acquired in previous tries. |
+
+---
+
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.AcquireSemaphoreOptions.property.name"></a>
+
+```typescript
+public readonly name: string;
+```
+
+- *Type:* string
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+##### `userId`<sup>Required</sup> <a name="userId" id="cdk-concurrency-controller.AcquireSemaphoreOptions.property.userId"></a>
+
+```typescript
+public readonly userId: string;
+```
+
+- *Type:* string
+
+The semaphore user id to acquire/release resource usage.
+
+---
+
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.AcquireSemaphoreOptions.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
+##### `waitTime`<sup>Optional</sup> <a name="waitTime" id="cdk-concurrency-controller.AcquireSemaphoreOptions.property.waitTime"></a>
+
+```typescript
+public readonly waitTime: WaitTime;
+```
+
+- *Type:* monocdk.aws_stepfunctions.WaitTime
+- *Default:* Duration.seconds(3)
+
+The maximum wait duration for another try to acquire semaphore if not acquired in previous tries.
+
+---
 
 ### DistributedSemaphoreProps <a name="DistributedSemaphoreProps" id="cdk-concurrency-controller.DistributedSemaphoreProps"></a>
 
@@ -115,53 +800,435 @@ const distributedSemaphoreProps: DistributedSemaphoreProps = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.doWork">doWork</a></code> | <code>monocdk.aws_stepfunctions.IChainable</code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.concurrencyLimit">concurrencyLimit</a></code> | <code>number</code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.lockCountAttributeName">lockCountAttributeName</a></code> | <code>string</code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.lockName">lockName</a></code> | <code>string</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.defaultSemaphore">defaultSemaphore</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a></code> | The default semaphore settings. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.semaphores">semaphores</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>[]</code> | *No description.* |
 
 ---
 
-##### `doWork`<sup>Required</sup> <a name="doWork" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.doWork"></a>
+##### `defaultSemaphore`<sup>Optional</sup> <a name="defaultSemaphore" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.defaultSemaphore"></a>
 
 ```typescript
-public readonly doWork: IChainable;
+public readonly defaultSemaphore: SemaphoreDefinition;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.IChainable
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>
+- *Default:* '{ name: "DefaultSemaphore", concurrencyLimit: 5 }'
+
+The default semaphore settings.
+
+It is used when no other pattern of semaphore applied. This can be used as a quick start when working with a single arbitrary resource.  NOTE: the default semaphore name cannot use JsonPath expression for the sake of a safe fallback.
 
 ---
 
-##### `concurrencyLimit`<sup>Optional</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.concurrencyLimit"></a>
+##### `semaphores`<sup>Optional</sup> <a name="semaphores" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.semaphores"></a>
+
+```typescript
+public readonly semaphores: SemaphoreDefinition[];
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>[]
+
+---
+
+### ReleaseOptions <a name="ReleaseOptions" id="cdk-concurrency-controller.ReleaseOptions"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.ReleaseOptions.Initializer"></a>
+
+```typescript
+import { ReleaseOptions } from 'cdk-concurrency-controller'
+
+const releaseOptions: ReleaseOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
+| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
+
+---
+
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.ReleaseOptions.property.name"></a>
+
+```typescript
+public readonly name: string;
+```
+
+- *Type:* string
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+##### `userId`<sup>Required</sup> <a name="userId" id="cdk-concurrency-controller.ReleaseOptions.property.userId"></a>
+
+```typescript
+public readonly userId: string;
+```
+
+- *Type:* string
+
+The semaphore user id to acquire/release resource usage.
+
+---
+
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.ReleaseOptions.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
+##### `checkSemaphoreUseFirst`<sup>Optional</sup> <a name="checkSemaphoreUseFirst" id="cdk-concurrency-controller.ReleaseOptions.property.checkSemaphoreUseFirst"></a>
+
+```typescript
+public readonly checkSemaphoreUseFirst: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+Check if the semaphore use exists before trying to release it.
+
+This can help to shift the load from write capacity to read capacity in case of missing semaphore use (best effort to avoid hot partitions and save write capacity for crucial actions), where DDB provides 3x throughput on read capacity than write capacity per partition. see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
+
+---
+
+### ReleaseSemaphoreFragmentProps <a name="ReleaseSemaphoreFragmentProps" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.Initializer"></a>
+
+```typescript
+import { ReleaseSemaphoreFragmentProps } from 'cdk-concurrency-controller'
+
+const releaseSemaphoreFragmentProps: ReleaseSemaphoreFragmentProps = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
+
+---
+
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.name"></a>
+
+```typescript
+public readonly name: string;
+```
+
+- *Type:* string
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+##### `userId`<sup>Required</sup> <a name="userId" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.userId"></a>
+
+```typescript
+public readonly userId: string;
+```
+
+- *Type:* string
+
+The semaphore user id to acquire/release resource usage.
+
+---
+
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
+##### `checkSemaphoreUseFirst`<sup>Optional</sup> <a name="checkSemaphoreUseFirst" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.checkSemaphoreUseFirst"></a>
+
+```typescript
+public readonly checkSemaphoreUseFirst: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+Check if the semaphore use exists before trying to release it.
+
+This can help to shift the load from write capacity to read capacity in case of missing semaphore use (best effort to avoid hot partitions and save write capacity for crucial actions), where DDB provides 3x throughput on read capacity than write capacity per partition. see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
+
+---
+
+##### `semaphoreTable`<sup>Required</sup> <a name="semaphoreTable" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.semaphoreTable"></a>
+
+```typescript
+public readonly semaphoreTable: SemaphoreTableDefinition;
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a>
+
+The DynamoDB table to use for the semaphore.
+
+---
+
+### ReleaseSemaphoreOptions <a name="ReleaseSemaphoreOptions" id="cdk-concurrency-controller.ReleaseSemaphoreOptions"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.ReleaseSemaphoreOptions.Initializer"></a>
+
+```typescript
+import { ReleaseSemaphoreOptions } from 'cdk-concurrency-controller'
+
+const releaseSemaphoreOptions: ReleaseSemaphoreOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
+
+---
+
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.ReleaseSemaphoreOptions.property.name"></a>
+
+```typescript
+public readonly name: string;
+```
+
+- *Type:* string
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+##### `userId`<sup>Required</sup> <a name="userId" id="cdk-concurrency-controller.ReleaseSemaphoreOptions.property.userId"></a>
+
+```typescript
+public readonly userId: string;
+```
+
+- *Type:* string
+
+The semaphore user id to acquire/release resource usage.
+
+---
+
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.ReleaseSemaphoreOptions.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
+##### `checkSemaphoreUseFirst`<sup>Optional</sup> <a name="checkSemaphoreUseFirst" id="cdk-concurrency-controller.ReleaseSemaphoreOptions.property.checkSemaphoreUseFirst"></a>
+
+```typescript
+public readonly checkSemaphoreUseFirst: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+Check if the semaphore use exists before trying to release it.
+
+This can help to shift the load from write capacity to read capacity in case of missing semaphore use (best effort to avoid hot partitions and save write capacity for crucial actions), where DDB provides 3x throughput on read capacity than write capacity per partition. see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
+
+---
+
+### SemaphoreDefinition <a name="SemaphoreDefinition" id="cdk-concurrency-controller.SemaphoreDefinition"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.SemaphoreDefinition.Initializer"></a>
+
+```typescript
+import { SemaphoreDefinition } from 'cdk-concurrency-controller'
+
+const semaphoreDefinition: SemaphoreDefinition = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.concurrencyLimit">concurrencyLimit</a></code> | <code>number</code> | The value for concurrency control. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+
+---
+
+##### `concurrencyLimit`<sup>Required</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.SemaphoreDefinition.property.concurrencyLimit"></a>
 
 ```typescript
 public readonly concurrencyLimit: number;
 ```
 
 - *Type:* number
-- *Default:* 5
+
+The value for concurrency control.
 
 ---
 
-##### `lockCountAttributeName`<sup>Optional</sup> <a name="lockCountAttributeName" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.lockCountAttributeName"></a>
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.SemaphoreDefinition.property.name"></a>
 
 ```typescript
-public readonly lockCountAttributeName: string;
+public readonly name: string;
 ```
 
 - *Type:* string
-- *Default:* 'CurrentLockCount'
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
 
 ---
 
-##### `lockName`<sup>Optional</sup> <a name="lockName" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.lockName"></a>
+### SemaphoreTableDefinition <a name="SemaphoreTableDefinition" id="cdk-concurrency-controller.SemaphoreTableDefinition"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.SemaphoreTableDefinition.Initializer"></a>
 
 ```typescript
-public readonly lockName: string;
+import { SemaphoreTableDefinition } from 'cdk-concurrency-controller'
+
+const semaphoreTableDefinition: SemaphoreTableDefinition = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.countAttributeName">countAttributeName</a></code> | <code>string</code> | The attribute name for a semaphore in-use count. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.partitionKey">partitionKey</a></code> | <code>monocdk.aws_dynamodb.Attribute</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.table">table</a></code> | <code>monocdk.aws_dynamodb.ITable</code> | *No description.* |
+
+---
+
+##### `countAttributeName`<sup>Required</sup> <a name="countAttributeName" id="cdk-concurrency-controller.SemaphoreTableDefinition.property.countAttributeName"></a>
+
+```typescript
+public readonly countAttributeName: string;
 ```
 
 - *Type:* string
-- *Default:* 'DefaultLock'
+
+The attribute name for a semaphore in-use count.
+
+---
+
+##### `partitionKey`<sup>Required</sup> <a name="partitionKey" id="cdk-concurrency-controller.SemaphoreTableDefinition.property.partitionKey"></a>
+
+```typescript
+public readonly partitionKey: Attribute;
+```
+
+- *Type:* monocdk.aws_dynamodb.Attribute
+
+---
+
+##### `table`<sup>Required</sup> <a name="table" id="cdk-concurrency-controller.SemaphoreTableDefinition.property.table"></a>
+
+```typescript
+public readonly table: ITable;
+```
+
+- *Type:* monocdk.aws_dynamodb.ITable
+
+---
+
+### SemaphoreUseOptions <a name="SemaphoreUseOptions" id="cdk-concurrency-controller.SemaphoreUseOptions"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.SemaphoreUseOptions.Initializer"></a>
+
+```typescript
+import { SemaphoreUseOptions } from 'cdk-concurrency-controller'
+
+const semaphoreUseOptions: SemaphoreUseOptions = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.SemaphoreUseOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreUseOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreUseOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+
+---
+
+##### `name`<sup>Required</sup> <a name="name" id="cdk-concurrency-controller.SemaphoreUseOptions.property.name"></a>
+
+```typescript
+public readonly name: string;
+```
+
+- *Type:* string
+
+The name for the semaphore.
+
+Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+##### `userId`<sup>Required</sup> <a name="userId" id="cdk-concurrency-controller.SemaphoreUseOptions.property.userId"></a>
+
+```typescript
+public readonly userId: string;
+```
+
+- *Type:* string
+
+The semaphore user id to acquire/release resource usage.
+
+---
+
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.SemaphoreUseOptions.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
 
 ---
 

@@ -1,6 +1,7 @@
 import { Construct } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { AcquireSemaphoreFragment, AcquireSemaphoreOptions, CleanResultSingleStateFragment, ReleaseSemaphoreFragment, ReleaseSemaphoreOptions, SemaphoreDefinition, SemaphoreTableDefinition, SemaphoreUseOptions } from './fragement';
+import { StateMachineFragment } from 'monocdk/aws-stepfunctions';
+import { AcquireSemaphoreFragment, AcquireSemaphoreOptions, ReleaseSemaphoreFragment, ReleaseSemaphoreOptions, SemaphoreDefinition, SemaphoreTableDefinition, SemaphoreUseOptions } from './fragment';
 
 export interface DistributedSemaphoreProps {
   /**
@@ -62,7 +63,7 @@ export class DistributedSemaphore extends Construct {
    *
    * @param options use default semaphore if not specified
    */
-  public acquire(options: AcquireOptions = { ...this.defaultSemaphoreUseOptions }): CleanResultSingleStateFragment {
+  public acquire(options: AcquireOptions = { ...this.defaultSemaphoreUseOptions }): StateMachineFragment {
     this.validateSemaphoreUseOptions(options);
 
     return new AcquireSemaphoreFragment(this, `AcquireSemaphore${this.count++}`, {
@@ -81,7 +82,7 @@ export class DistributedSemaphore extends Construct {
    *
    * @param options use default semaphore if not specified
    */
-  public release(options: ReleaseOptions = { ...this.defaultSemaphoreUseOptions }): CleanResultSingleStateFragment {
+  public release(options: ReleaseOptions = { ...this.defaultSemaphoreUseOptions }): StateMachineFragment {
     this.validateSemaphoreUseOptions(options);
 
     return new ReleaseSemaphoreFragment(this, `ReleaseSemaphore${this.count++}`, {

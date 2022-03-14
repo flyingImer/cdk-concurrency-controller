@@ -97,817 +97,7 @@ Object {
     },
   },
   "Resources": Object {
-    "DistributedSemaphore7248237C": Object {
-      "DependsOn": Array [
-        "DistributedSemaphoreRoleDefaultPolicyAABB7C91",
-        "DistributedSemaphoreRoleDB487D50",
-      ],
-      "Properties": Object {
-        "DefinitionString": Object {
-          "Fn::Join": Array [
-            "",
-            Array [
-              "{\\"StartAt\\":\\"AcquireMyLock\\",\\"States\\":{\\"AcquireMyLock\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"DoNothing\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireMyLock: AcquireLock\\",\\"States\\":{\\"AcquireMyLock: AcquireLock\\":{\\"Next\\":\\"AcquireMyLock: LockAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireMyLock: InitializeLockItem\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireMyLock: GetLockDetails\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"Resource\\":\\"arn:",
-              Object {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
-              Object {
-                "Ref": "DistributedSemaphoreLockTable45D69AC1",
-              },
-              "\\",\\"ConditionExpression\\":\\"#currentlockcount <> :limit and attribute_not_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentLockCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N\\":\\"5\\"},\\":lockacquiredtime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime\\"}},\\"AcquireMyLock: WaitToGetLock\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.\\",\\"Seconds\\":3,\\"Next\\":\\"AcquireMyLock: AcquireLock\\"},\\"AcquireMyLock: InitializeLockItem\\":{\\"Next\\":\\"AcquireMyLock: AcquireLock\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"Next\\":\\"AcquireMyLock: AcquireLock\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"Resource\\":\\"arn:",
-              Object {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"},\\"CurrentLockCount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
-              Object {
-                "Ref": "DistributedSemaphoreLockTable45D69AC1",
-              },
-              "\\",\\"ConditionExpression\\":\\"LockName <> :lockname\\",\\"ExpressionAttributeValues\\":{\\":lockname\\":{\\"S\\":\\"DefaultLock\\"}}}},\\"AcquireMyLock: LockAcquired\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"AcquireMyLock: LockAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"Next\\":\\"AcquireMyLock: LockAcquired\\"},\\"AcquireMyLock: CheckIfLockIsHeld\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"AcquireMyLock: LockAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"AcquireMyLock: WaitToGetLock\\"},\\"AcquireMyLock: GetLockDetails\\":{\\"Next\\":\\"AcquireMyLock: CheckIfLockIsHeld\\",\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"ResultSelector\\":{\\"Item.$\\":\\"$.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.Item)\\"},\\"Resource\\":\\"arn:",
-              Object {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
-              Object {
-                "Ref": "DistributedSemaphoreLockTable45D69AC1",
-              },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"DoNothing\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseMyLock\\"},\\"ReleaseMyLock\\":{\\"Type\\":\\"Parallel\\",\\"End\\":true,\\"Branches\\":[{\\"StartAt\\":\\"ReleaseMyLock: ReleaseLock\\",\\"States\\":{\\"ReleaseMyLock: ReleaseLock\\":{\\"Next\\":\\"ReleaseMyLock: LockReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"ReleaseMyLock: LockNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"Resource\\":\\"arn:",
-              Object {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
-              Object {
-                "Ref": "DistributedSemaphoreLockTable45D69AC1",
-              },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentLockCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseMyLock: LockReleased\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"ReleaseMyLock: LockNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseMyLock: LockReleased\\"}}}]}}}",
-            ],
-          ],
-        },
-        "LoggingConfiguration": Object {
-          "Destinations": Array [
-            Object {
-              "CloudWatchLogsLogGroup": Object {
-                "LogGroupArn": Object {
-                  "Fn::GetAtt": Array [
-                    "DistributedSemaphoreSemaphoreLogGroup5BA5E6E6",
-                    "Arn",
-                  ],
-                },
-              },
-            },
-          ],
-          "IncludeExecutionData": true,
-          "Level": "ALL",
-        },
-        "RoleArn": Object {
-          "Fn::GetAtt": Array [
-            "DistributedSemaphoreRoleDB487D50",
-            "Arn",
-          ],
-        },
-        "TracingConfiguration": Object {
-          "Enabled": true,
-        },
-      },
-      "Type": "AWS::StepFunctions::StateMachine",
-    },
-    "DistributedSemaphoreLockTable45D69AC1": Object {
-      "DeletionPolicy": "Retain",
-      "Properties": Object {
-        "AttributeDefinitions": Array [
-          Object {
-            "AttributeName": "LockName",
-            "AttributeType": "S",
-          },
-        ],
-        "BillingMode": "PAY_PER_REQUEST",
-        "KeySchema": Array [
-          Object {
-            "AttributeName": "LockName",
-            "KeyType": "HASH",
-          },
-        ],
-      },
-      "Type": "AWS::DynamoDB::Table",
-      "UpdateReplacePolicy": "Retain",
-    },
-    "DistributedSemaphoreRoleDB487D50": Object {
-      "Properties": Object {
-        "AssumeRolePolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": Object {
-                "Service": Object {
-                  "Fn::FindInMap": Array [
-                    "ServiceprincipalMap",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    "states",
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "DistributedSemaphoreRoleDefaultPolicyAABB7C91": Object {
-      "Properties": Object {
-        "PolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": Array [
-                "logs:CreateLogDelivery",
-                "logs:GetLogDelivery",
-                "logs:UpdateLogDelivery",
-                "logs:DeleteLogDelivery",
-                "logs:ListLogDeliveries",
-                "logs:PutResourcePolicy",
-                "logs:DescribeResourcePolicies",
-                "logs:DescribeLogGroups",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-            Object {
-              "Action": Array [
-                "xray:PutTraceSegments",
-                "xray:PutTelemetryRecords",
-                "xray:GetSamplingRules",
-                "xray:GetSamplingTargets",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-            Object {
-              "Action": "dynamodb:UpdateItem",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Fn::Join": Array [
-                  "",
-                  Array [
-                    "arn:",
-                    Object {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":dynamodb:",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    ":",
-                    Object {
-                      "Ref": "AWS::AccountId",
-                    },
-                    ":table/",
-                    Object {
-                      "Ref": "DistributedSemaphoreLockTable45D69AC1",
-                    },
-                  ],
-                ],
-              },
-            },
-            Object {
-              "Action": "dynamodb:PutItem",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Fn::Join": Array [
-                  "",
-                  Array [
-                    "arn:",
-                    Object {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":dynamodb:",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    ":",
-                    Object {
-                      "Ref": "AWS::AccountId",
-                    },
-                    ":table/",
-                    Object {
-                      "Ref": "DistributedSemaphoreLockTable45D69AC1",
-                    },
-                  ],
-                ],
-              },
-            },
-            Object {
-              "Action": "dynamodb:GetItem",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Fn::Join": Array [
-                  "",
-                  Array [
-                    "arn:",
-                    Object {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":dynamodb:",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    ":",
-                    Object {
-                      "Ref": "AWS::AccountId",
-                    },
-                    ":table/",
-                    Object {
-                      "Ref": "DistributedSemaphoreLockTable45D69AC1",
-                    },
-                  ],
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "DistributedSemaphoreRoleDefaultPolicyAABB7C91",
-        "Roles": Array [
-          Object {
-            "Ref": "DistributedSemaphoreRoleDB487D50",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "DistributedSemaphoreRunForIncomplete46566F45": Object {
-      "Properties": Object {
-        "EventPattern": Object {
-          "detail": Object {
-            "stateMachineArn": Array [
-              Object {
-                "Ref": "DistributedSemaphore7248237C",
-              },
-            ],
-            "status": Array [
-              "FAILED",
-              "TIMED_OUT",
-              "ABORTED",
-            ],
-          },
-          "source": Array [
-            "aws.states",
-          ],
-        },
-        "State": "ENABLED",
-        "Targets": Array [
-          Object {
-            "Arn": Object {
-              "Ref": "DistributedSemaphoreSemaphoreCleanup4070C6CC",
-            },
-            "Id": "Target0",
-            "RoleArn": Object {
-              "Fn::GetAtt": Array [
-                "DistributedSemaphoreSemaphoreCleanupEventsRole88C26C12",
-                "Arn",
-              ],
-            },
-          },
-        ],
-      },
-      "Type": "AWS::Events::Rule",
-    },
-    "DistributedSemaphoreSemaphoreCleanup4070C6CC": Object {
-      "DependsOn": Array [
-        "DistributedSemaphoreSemaphoreCleanupRoleDefaultPolicy0ADCE922",
-        "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346",
-      ],
-      "Properties": Object {
-        "DefinitionString": Object {
-          "Fn::Join": Array [
-            "",
-            Array [
-              "{\\"StartAt\\":\\"GetLockDetails\\",\\"States\\":{\\"GetLockDetails\\":{\\"Next\\":\\"CheckIfLockIsHeld\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"ResultSelector\\":{\\"Item.$\\":\\"$.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.Item)\\"},\\"Resource\\":\\"arn:",
-              Object {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
-              Object {
-                "Ref": "DistributedSemaphoreLockTable45D69AC1",
-              },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}},\\"CheckIfLockIsHeld\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"ReleaseLock\\"}],\\"Default\\":\\"LockNotHeldContinue\\"},\\"LockNotHeldContinue\\":{\\"Type\\":\\"Succeed\\"},\\"ReleaseLock\\":{\\"Next\\":\\"LockReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"Next\\":\\"LockNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"Resource\\":\\"arn:",
-              Object {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"LockName\\":{\\"S\\":\\"DefaultLock\\"}},\\"TableName\\":\\"",
-              Object {
-                "Ref": "DistributedSemaphoreLockTable45D69AC1",
-              },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentLockCount\\",\\"#lockownerid.$\\":\\"$.detail.executionArn\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"LockReleased\\":{\\"Type\\":\\"Pass\\",\\"End\\":true},\\"LockNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"LockReleased\\"}}}",
-            ],
-          ],
-        },
-        "LoggingConfiguration": Object {
-          "Destinations": Array [
-            Object {
-              "CloudWatchLogsLogGroup": Object {
-                "LogGroupArn": Object {
-                  "Fn::GetAtt": Array [
-                    "DistributedSemaphoreSemaphoreCleanupLogGroup568B996B",
-                    "Arn",
-                  ],
-                },
-              },
-            },
-          ],
-          "IncludeExecutionData": true,
-          "Level": "ALL",
-        },
-        "RoleArn": Object {
-          "Fn::GetAtt": Array [
-            "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346",
-            "Arn",
-          ],
-        },
-        "TracingConfiguration": Object {
-          "Enabled": true,
-        },
-      },
-      "Type": "AWS::StepFunctions::StateMachine",
-    },
-    "DistributedSemaphoreSemaphoreCleanupEventsRole88C26C12": Object {
-      "Properties": Object {
-        "AssumeRolePolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": Object {
-                "Service": "events.amazonaws.com",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "DistributedSemaphoreSemaphoreCleanupEventsRoleDefaultPolicyE7FC8AA3": Object {
-      "Properties": Object {
-        "PolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": "states:StartExecution",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Ref": "DistributedSemaphoreSemaphoreCleanup4070C6CC",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "DistributedSemaphoreSemaphoreCleanupEventsRoleDefaultPolicyE7FC8AA3",
-        "Roles": Array [
-          Object {
-            "Ref": "DistributedSemaphoreSemaphoreCleanupEventsRole88C26C12",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "DistributedSemaphoreSemaphoreCleanupLogGroup568B996B": Object {
-      "DeletionPolicy": "Delete",
-      "Properties": Object {
-        "RetentionInDays": 60,
-      },
-      "Type": "AWS::Logs::LogGroup",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346": Object {
-      "Properties": Object {
-        "AssumeRolePolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": Object {
-                "Service": Object {
-                  "Fn::FindInMap": Array [
-                    "ServiceprincipalMap",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    "states",
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "DistributedSemaphoreSemaphoreCleanupRoleDefaultPolicy0ADCE922": Object {
-      "Properties": Object {
-        "PolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": Array [
-                "logs:CreateLogDelivery",
-                "logs:GetLogDelivery",
-                "logs:UpdateLogDelivery",
-                "logs:DeleteLogDelivery",
-                "logs:ListLogDeliveries",
-                "logs:PutResourcePolicy",
-                "logs:DescribeResourcePolicies",
-                "logs:DescribeLogGroups",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-            Object {
-              "Action": Array [
-                "xray:PutTraceSegments",
-                "xray:PutTelemetryRecords",
-                "xray:GetSamplingRules",
-                "xray:GetSamplingTargets",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-            Object {
-              "Action": "dynamodb:GetItem",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Fn::Join": Array [
-                  "",
-                  Array [
-                    "arn:",
-                    Object {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":dynamodb:",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    ":",
-                    Object {
-                      "Ref": "AWS::AccountId",
-                    },
-                    ":table/",
-                    Object {
-                      "Ref": "DistributedSemaphoreLockTable45D69AC1",
-                    },
-                  ],
-                ],
-              },
-            },
-            Object {
-              "Action": "dynamodb:UpdateItem",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Fn::Join": Array [
-                  "",
-                  Array [
-                    "arn:",
-                    Object {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":dynamodb:",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    ":",
-                    Object {
-                      "Ref": "AWS::AccountId",
-                    },
-                    ":table/",
-                    Object {
-                      "Ref": "DistributedSemaphoreLockTable45D69AC1",
-                    },
-                  ],
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "DistributedSemaphoreSemaphoreCleanupRoleDefaultPolicy0ADCE922",
-        "Roles": Array [
-          Object {
-            "Ref": "DistributedSemaphoreSemaphoreCleanupRoleCA3B1346",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-    "DistributedSemaphoreSemaphoreLogGroup5BA5E6E6": Object {
-      "DeletionPolicy": "Delete",
-      "Properties": Object {
-        "RetentionInDays": 60,
-      },
-      "Type": "AWS::Logs::LogGroup",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "DistributedSemaphoreSemaphoreTestingE007A549": Object {
-      "DependsOn": Array [
-        "DistributedSemaphoreSemaphoreTestingRoleDefaultPolicy02A59DA7",
-        "DistributedSemaphoreSemaphoreTestingRole18C930B5",
-      ],
-      "Properties": Object {
-        "DefinitionString": Object {
-          "Fn::Join": Array [
-            "",
-            Array [
-              "{\\"StartAt\\":\\"GenerateDefaultInput\\",\\"States\\":{\\"GenerateDefaultInput\\":{\\"Type\\":\\"Pass\\",\\"Parameters\\":{\\"iterations\\":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100]},\\"Next\\":\\"StartInParallel\\"},\\"StartInParallel\\":{\\"Type\\":\\"Map\\",\\"End\\":true,\\"Iterator\\":{\\"StartAt\\":\\"RunChildStateMachine\\",\\"States\\":{\\"RunChildStateMachine\\":{\\"Next\\":\\"ClearResults\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"StepFunctions.ExecutionAlreadyExistsException\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":1,\\"BackoffRate\\":5},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":12,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.TaskFailed\\"],\\"ResultPath\\":\\"$.stateoutput.RunChildStateMachine\\",\\"Next\\":\\"ClearResults\\"}],\\"Type\\":\\"Task\\",\\"ResultSelector\\":{\\"Nothing\\":\\"Nothing\\"},\\"Resource\\":\\"arn:",
-              Object {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
-              Object {
-                "Ref": "DistributedSemaphore7248237C",
-              },
-              "\\"}},\\"ClearResults\\":{\\"Type\\":\\"Pass\\",\\"Result\\":\\"Done\\",\\"End\\":true}}},\\"ItemsPath\\":\\"$.iterations\\",\\"MaxConcurrency\\":0}}}",
-            ],
-          ],
-        },
-        "LoggingConfiguration": Object {
-          "Destinations": Array [
-            Object {
-              "CloudWatchLogsLogGroup": Object {
-                "LogGroupArn": Object {
-                  "Fn::GetAtt": Array [
-                    "DistributedSemaphoreSemaphoreTestingLogGroup5B310090",
-                    "Arn",
-                  ],
-                },
-              },
-            },
-          ],
-          "IncludeExecutionData": true,
-          "Level": "ALL",
-        },
-        "RoleArn": Object {
-          "Fn::GetAtt": Array [
-            "DistributedSemaphoreSemaphoreTestingRole18C930B5",
-            "Arn",
-          ],
-        },
-        "TracingConfiguration": Object {
-          "Enabled": true,
-        },
-      },
-      "Type": "AWS::StepFunctions::StateMachine",
-    },
-    "DistributedSemaphoreSemaphoreTestingLogGroup5B310090": Object {
-      "DeletionPolicy": "Delete",
-      "Properties": Object {
-        "RetentionInDays": 60,
-      },
-      "Type": "AWS::Logs::LogGroup",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "DistributedSemaphoreSemaphoreTestingRole18C930B5": Object {
-      "Properties": Object {
-        "AssumeRolePolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": Object {
-                "Service": Object {
-                  "Fn::FindInMap": Array [
-                    "ServiceprincipalMap",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    "states",
-                  ],
-                },
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-      },
-      "Type": "AWS::IAM::Role",
-    },
-    "DistributedSemaphoreSemaphoreTestingRoleDefaultPolicy02A59DA7": Object {
-      "Properties": Object {
-        "PolicyDocument": Object {
-          "Statement": Array [
-            Object {
-              "Action": Array [
-                "logs:CreateLogDelivery",
-                "logs:GetLogDelivery",
-                "logs:UpdateLogDelivery",
-                "logs:DeleteLogDelivery",
-                "logs:ListLogDeliveries",
-                "logs:PutResourcePolicy",
-                "logs:DescribeResourcePolicies",
-                "logs:DescribeLogGroups",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-            Object {
-              "Action": Array [
-                "xray:PutTraceSegments",
-                "xray:PutTelemetryRecords",
-                "xray:GetSamplingRules",
-                "xray:GetSamplingTargets",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-            Object {
-              "Action": "states:StartExecution",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Ref": "DistributedSemaphore7248237C",
-              },
-            },
-            Object {
-              "Action": Array [
-                "states:DescribeExecution",
-                "states:StopExecution",
-              ],
-              "Effect": "Allow",
-              "Resource": Object {
-                "Fn::Join": Array [
-                  "",
-                  Array [
-                    "arn:",
-                    Object {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":states:",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    ":",
-                    Object {
-                      "Ref": "AWS::AccountId",
-                    },
-                    ":execution:",
-                    Object {
-                      "Fn::Select": Array [
-                        6,
-                        Object {
-                          "Fn::Split": Array [
-                            ":",
-                            Object {
-                              "Ref": "DistributedSemaphore7248237C",
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    "*",
-                  ],
-                ],
-              },
-            },
-            Object {
-              "Action": Array [
-                "events:PutTargets",
-                "events:PutRule",
-                "events:DescribeRule",
-              ],
-              "Effect": "Allow",
-              "Resource": Object {
-                "Fn::Join": Array [
-                  "",
-                  Array [
-                    "arn:",
-                    Object {
-                      "Ref": "AWS::Partition",
-                    },
-                    ":events:",
-                    Object {
-                      "Ref": "AWS::Region",
-                    },
-                    ":",
-                    Object {
-                      "Ref": "AWS::AccountId",
-                    },
-                    ":rule/StepFunctionsGetEventsForStepFunctionsExecutionRule",
-                  ],
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "DistributedSemaphoreSemaphoreTestingRoleDefaultPolicy02A59DA7",
-        "Roles": Array [
-          Object {
-            "Ref": "DistributedSemaphoreSemaphoreTestingRole18C930B5",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
-  },
-}
-`;
-
-exports[`snapshot test V2 1`] = `
-Object {
-  "Mappings": Object {
-    "ServiceprincipalMap": Object {
-      "af-south-1": Object {
-        "states": "states.af-south-1.amazonaws.com",
-      },
-      "ap-east-1": Object {
-        "states": "states.ap-east-1.amazonaws.com",
-      },
-      "ap-northeast-1": Object {
-        "states": "states.ap-northeast-1.amazonaws.com",
-      },
-      "ap-northeast-2": Object {
-        "states": "states.ap-northeast-2.amazonaws.com",
-      },
-      "ap-northeast-3": Object {
-        "states": "states.ap-northeast-3.amazonaws.com",
-      },
-      "ap-south-1": Object {
-        "states": "states.ap-south-1.amazonaws.com",
-      },
-      "ap-southeast-1": Object {
-        "states": "states.ap-southeast-1.amazonaws.com",
-      },
-      "ap-southeast-2": Object {
-        "states": "states.ap-southeast-2.amazonaws.com",
-      },
-      "ap-southeast-3": Object {
-        "states": "states.ap-southeast-3.amazonaws.com",
-      },
-      "ca-central-1": Object {
-        "states": "states.ca-central-1.amazonaws.com",
-      },
-      "cn-north-1": Object {
-        "states": "states.cn-north-1.amazonaws.com",
-      },
-      "cn-northwest-1": Object {
-        "states": "states.cn-northwest-1.amazonaws.com",
-      },
-      "eu-central-1": Object {
-        "states": "states.eu-central-1.amazonaws.com",
-      },
-      "eu-north-1": Object {
-        "states": "states.eu-north-1.amazonaws.com",
-      },
-      "eu-south-1": Object {
-        "states": "states.eu-south-1.amazonaws.com",
-      },
-      "eu-south-2": Object {
-        "states": "states.eu-south-2.amazonaws.com",
-      },
-      "eu-west-1": Object {
-        "states": "states.eu-west-1.amazonaws.com",
-      },
-      "eu-west-2": Object {
-        "states": "states.eu-west-2.amazonaws.com",
-      },
-      "eu-west-3": Object {
-        "states": "states.eu-west-3.amazonaws.com",
-      },
-      "me-south-1": Object {
-        "states": "states.me-south-1.amazonaws.com",
-      },
-      "sa-east-1": Object {
-        "states": "states.sa-east-1.amazonaws.com",
-      },
-      "us-east-1": Object {
-        "states": "states.us-east-1.amazonaws.com",
-      },
-      "us-east-2": Object {
-        "states": "states.us-east-2.amazonaws.com",
-      },
-      "us-gov-east-1": Object {
-        "states": "states.us-gov-east-1.amazonaws.com",
-      },
-      "us-gov-west-1": Object {
-        "states": "states.us-gov-west-1.amazonaws.com",
-      },
-      "us-iso-east-1": Object {
-        "states": "states.amazonaws.com",
-      },
-      "us-iso-west-1": Object {
-        "states": "states.amazonaws.com",
-      },
-      "us-isob-east-1": Object {
-        "states": "states.amazonaws.com",
-      },
-      "us-west-1": Object {
-        "states": "states.us-west-1.amazonaws.com",
-      },
-      "us-west-2": Object {
-        "states": "states.us-west-2.amazonaws.com",
-      },
-    },
-  },
-  "Resources": Object {
-    "DistributedSemaphoreV2SemaphoreTable8A090493": Object {
+    "DistributedSemaphoreSemaphoreTableE8DED22E": Object {
       "DeletionPolicy": "Retain",
       "Properties": Object {
         "AttributeDefinitions": Array [
@@ -940,13 +130,13 @@ Object {
           "Fn::Join": Array [
             "",
             Array [
-              "{\\"StartAt\\":\\"AcquireSemaphore0\\",\\"States\\":{\\"AcquireSemaphore0\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"Next\\":\\"DoSomething\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore0: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore0: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore0: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore0: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore0: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "{\\"StartAt\\":\\"AcquireSemaphore0\\",\\"States\\":{\\"AcquireSemaphore0\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"DoSomething\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore0: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore0: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore0: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore0: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore0: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S\\":\\"DefaultSemaphore\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"#currentlockcount <> :limit and attribute_not_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N\\":\\"5\\"},\\":lockacquiredtime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime\\"}},\\"AcquireSemaphore0: InitializeSemaphore\\":{\\"Next\\":\\"AcquireSemaphore0: TryToAcquireSemaphore\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore0: TryToAcquireSemaphore\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
@@ -954,7 +144,7 @@ Object {
               },
               ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"SemaphoreName\\":{\\"S\\":\\"DefaultSemaphore\\"},\\"CurrentInUseCount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"SemaphoreName <> :lockname\\",\\"ExpressionAttributeValues\\":{\\":lockname\\":{\\"S\\":\\"DefaultSemaphore\\"}}}},\\"AcquireSemaphore0: WaitToAcquireSemaphore\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.\\",\\"Seconds\\":3,\\"Next\\":\\"AcquireSemaphore0: TryToAcquireSemaphore\\"},\\"AcquireSemaphore0: SemaphoreAcquired\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"AcquireSemaphore0: SemaphoreAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore0: SemaphoreAcquired\\"},\\"AcquireSemaphore0: CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"AcquireSemaphore0: SemaphoreAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"AcquireSemaphore0: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore0: PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Parameters\\":{\\"Item.$\\":\\"$.lockinfo.currentlockitem.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.lockinfo.currentlockitem.Item)\\"},\\"Next\\":\\"AcquireSemaphore0: CheckIfFoundSemaphoreUse\\"},\\"AcquireSemaphore0: CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"AcquireSemaphore0: PrepareInput\\"}],\\"Default\\":\\"AcquireSemaphore0: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore0: GetSemaphoreUse\\":{\\"Next\\":\\"AcquireSemaphore0: CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Resource\\":\\"arn:",
               Object {
@@ -962,23 +152,23 @@ Object {
               },
               ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S\\":\\"DefaultSemaphore\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"DoSomething\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore1\\"},\\"ReleaseSemaphore1\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore2\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore1: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore1: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore1: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore1: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"DoSomething\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore1\\"},\\"ReleaseSemaphore1\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AcquireSemaphore2\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore1: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore1: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore1: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore1: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S\\":\\"DefaultSemaphore\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseSemaphore1: SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"ReleaseSemaphore1: SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore1: SemaphoreReleased\\"}}}]},\\"AcquireSemaphore2\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"Next\\":\\"DoNothing\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore2: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore2: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore2: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore2: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore2: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseSemaphore1: SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"ReleaseSemaphore1: SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore1: SemaphoreReleased\\"}}}]},\\"AcquireSemaphore2\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"DoNothing\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore2: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore2: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore2: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore2: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore2: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"#currentlockcount <> :limit and attribute_not_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N\\":\\"6\\"},\\":lockacquiredtime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime\\"}},\\"AcquireSemaphore2: InitializeSemaphore\\":{\\"Next\\":\\"AcquireSemaphore2: TryToAcquireSemaphore\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore2: TryToAcquireSemaphore\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
@@ -986,7 +176,7 @@ Object {
               },
               ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"},\\"CurrentInUseCount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"SemaphoreName <> :lockname\\",\\"ExpressionAttributeValues\\":{\\":lockname\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}}}},\\"AcquireSemaphore2: WaitToAcquireSemaphore\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.\\",\\"Seconds\\":3,\\"Next\\":\\"AcquireSemaphore2: TryToAcquireSemaphore\\"},\\"AcquireSemaphore2: SemaphoreAcquired\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"AcquireSemaphore2: SemaphoreAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore2: SemaphoreAcquired\\"},\\"AcquireSemaphore2: CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"AcquireSemaphore2: SemaphoreAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"AcquireSemaphore2: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore2: PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Parameters\\":{\\"Item.$\\":\\"$.lockinfo.currentlockitem.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.lockinfo.currentlockitem.Item)\\"},\\"Next\\":\\"AcquireSemaphore2: CheckIfFoundSemaphoreUse\\"},\\"AcquireSemaphore2: CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"AcquireSemaphore2: PrepareInput\\"}],\\"Default\\":\\"AcquireSemaphore2: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore2: GetSemaphoreUse\\":{\\"Next\\":\\"AcquireSemaphore2: CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Resource\\":\\"arn:",
               Object {
@@ -994,23 +184,23 @@ Object {
               },
               ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"DoNothing\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore3\\"},\\"ReleaseSemaphore3\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore4\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore3: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore3: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore3: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore3: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"DoNothing\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore3\\"},\\"ReleaseSemaphore3\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AcquireSemaphore4\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore3: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore3: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore3: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore3: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseSemaphore3: SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"ReleaseSemaphore3: SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore3: SemaphoreReleased\\"}}}]},\\"AcquireSemaphore4\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"Next\\":\\"AllGood\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore4: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore4: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore4: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore4: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore4: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseSemaphore3: SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"ReleaseSemaphore3: SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore3: SemaphoreReleased\\"}}}]},\\"AcquireSemaphore4\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AllGood\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore4: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore4: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore4: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore4: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore4: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S\\":\\"NotDefaultName\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"#currentlockcount <> :limit and attribute_not_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N\\":\\"7\\"},\\":lockacquiredtime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime\\"}},\\"AcquireSemaphore4: InitializeSemaphore\\":{\\"Next\\":\\"AcquireSemaphore4: TryToAcquireSemaphore\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore4: TryToAcquireSemaphore\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
@@ -1018,7 +208,7 @@ Object {
               },
               ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"SemaphoreName\\":{\\"S\\":\\"NotDefaultName\\"},\\"CurrentInUseCount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"SemaphoreName <> :lockname\\",\\"ExpressionAttributeValues\\":{\\":lockname\\":{\\"S\\":\\"NotDefaultName\\"}}}},\\"AcquireSemaphore4: WaitToAcquireSemaphore\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.\\",\\"Seconds\\":3,\\"Next\\":\\"AcquireSemaphore4: TryToAcquireSemaphore\\"},\\"AcquireSemaphore4: SemaphoreAcquired\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"AcquireSemaphore4: SemaphoreAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore4: SemaphoreAcquired\\"},\\"AcquireSemaphore4: CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"AcquireSemaphore4: SemaphoreAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"AcquireSemaphore4: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore4: PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Parameters\\":{\\"Item.$\\":\\"$.lockinfo.currentlockitem.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.lockinfo.currentlockitem.Item)\\"},\\"Next\\":\\"AcquireSemaphore4: CheckIfFoundSemaphoreUse\\"},\\"AcquireSemaphore4: CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"AcquireSemaphore4: PrepareInput\\"}],\\"Default\\":\\"AcquireSemaphore4: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore4: GetSemaphoreUse\\":{\\"Next\\":\\"AcquireSemaphore4: CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Resource\\":\\"arn:",
               Object {
@@ -1026,23 +216,23 @@ Object {
               },
               ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S\\":\\"NotDefaultName\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"AllGood\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore5\\"},\\"ReleaseSemaphore5\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore6\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore5: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore5: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore5: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore5: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"AllGood\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore5\\"},\\"ReleaseSemaphore5\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AcquireSemaphore6\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore5: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore5: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore5: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore5: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S\\":\\"NotDefaultName\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseSemaphore5: SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"ReleaseSemaphore5: SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore5: SemaphoreReleased\\"}}}]},\\"AcquireSemaphore6\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"Next\\":\\"ItWorks\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore6: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore6: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore6: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore6: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore6: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseSemaphore5: SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"ReleaseSemaphore5: SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore5: SemaphoreReleased\\"}}}]},\\"AcquireSemaphore6\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"ItWorks\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireSemaphore6: TryToAcquireSemaphore\\",\\"States\\":{\\"AcquireSemaphore6: TryToAcquireSemaphore\\":{\\"Next\\":\\"AcquireSemaphore6: SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore6: InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.lockinfo.acquisitionerror\\",\\"Next\\":\\"AcquireSemaphore6: GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"#currentlockcount <> :limit and attribute_not_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N\\":\\"6\\"},\\":lockacquiredtime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime\\"}},\\"AcquireSemaphore6: InitializeSemaphore\\":{\\"Next\\":\\"AcquireSemaphore6: TryToAcquireSemaphore\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore6: TryToAcquireSemaphore\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
@@ -1050,7 +240,7 @@ Object {
               },
               ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"},\\"CurrentInUseCount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"SemaphoreName <> :lockname\\",\\"ExpressionAttributeValues\\":{\\":lockname\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}}}},\\"AcquireSemaphore6: WaitToAcquireSemaphore\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.\\",\\"Seconds\\":3,\\"Next\\":\\"AcquireSemaphore6: TryToAcquireSemaphore\\"},\\"AcquireSemaphore6: SemaphoreAcquired\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"AcquireSemaphore6: SemaphoreAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.\\",\\"ResultPath\\":null,\\"Next\\":\\"AcquireSemaphore6: SemaphoreAcquired\\"},\\"AcquireSemaphore6: CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.lockinfo.currentlockitem.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"AcquireSemaphore6: SemaphoreAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"AcquireSemaphore6: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore6: PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Parameters\\":{\\"Item.$\\":\\"$.lockinfo.currentlockitem.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.lockinfo.currentlockitem.Item)\\"},\\"Next\\":\\"AcquireSemaphore6: CheckIfFoundSemaphoreUse\\"},\\"AcquireSemaphore6: CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.lockinfo.currentlockitem.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"AcquireSemaphore6: PrepareInput\\"}],\\"Default\\":\\"AcquireSemaphore6: WaitToAcquireSemaphore\\"},\\"AcquireSemaphore6: GetSemaphoreUse\\":{\\"Next\\":\\"AcquireSemaphore6: CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the lock item.\\",\\"ResultPath\\":\\"$.lockinfo.currentlockitem\\",\\"Resource\\":\\"arn:",
               Object {
@@ -1058,15 +248,15 @@ Object {
               },
               ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"ItWorks\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore7\\"},\\"ReleaseSemaphore7\\":{\\"Type\\":\\"Parallel\\",\\"ResultPath\\":null,\\"End\\":true,\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore7: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore7: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore7: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore7: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ProjectionExpression\\":\\"#lockownerid\\"}}}}]},\\"ItWorks\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseSemaphore7\\"},\\"ReleaseSemaphore7\\":{\\"Type\\":\\"Parallel\\",\\"End\\":true,\\"Branches\\":[{\\"StartAt\\":\\"ReleaseSemaphore7: TryToReleaseSemaphore\\",\\"States\\":{\\"ReleaseSemaphore7: TryToReleaseSemaphore\\":{\\"Next\\":\\"ReleaseSemaphore7: SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore7: SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this lockowerid is still there, then clean it up and release the lock\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
               ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
               "\\",\\"ConditionExpression\\":\\"attribute_exists(#lockownerid)\\",\\"ExpressionAttributeNames\\":{\\"#currentlockcount\\":\\"CurrentInUseCount\\",\\"#lockownerid.$\\":\\"$$.Execution.Id\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid\\"}},\\"ReleaseSemaphore7: SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"ReleaseSemaphore7: SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"ReleaseSemaphore7: SemaphoreReleased\\"}}}]}}}",
             ],
@@ -1131,7 +321,7 @@ Object {
                     },
                     ":table/",
                     Object {
-                      "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                      "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
                     },
                   ],
                 ],
@@ -1158,7 +348,7 @@ Object {
                     },
                     ":table/",
                     Object {
-                      "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                      "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
                     },
                   ],
                 ],
@@ -1185,7 +375,7 @@ Object {
                     },
                     ":table/",
                     Object {
-                      "Ref": "DistributedSemaphoreV2SemaphoreTable8A090493",
+                      "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
                     },
                   ],
                 ],

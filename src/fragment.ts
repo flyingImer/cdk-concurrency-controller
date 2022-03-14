@@ -1,6 +1,6 @@
 import { Construct, Duration } from 'monocdk';
 import { Attribute, AttributeType, ITable } from 'monocdk/aws-dynamodb';
-import { Choice, Condition, Errors, IChainable, INextable, JsonPath, Parallel, Pass, RetryProps, SingleStateOptions, State, StateMachineFragment, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
+import { Choice, Condition, Errors, IChainable, INextable, JsonPath, Pass, RetryProps, State, StateMachineFragment, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
 import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem } from 'monocdk/aws-stepfunctions-tasks';
 
 export interface SemaphoreTableDefinition {
@@ -48,9 +48,11 @@ interface SemaphoreActionRetryOptions {
   /**
    * Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
    *
+   * NOTE: `errors` property is always overridden to [Errors.ALL].
+   *
    * @default '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
    */
-  readonly retryStrategy?: Omit<RetryProps, 'errors'>;
+  readonly retryStrategy?: RetryProps;
 }
 
 export interface SemaphoreUseOptions extends SemaphoreUseDefinition, SemaphoreActionRetryOptions { }
@@ -66,29 +68,7 @@ export interface AcquireSemaphoreOptions extends SemaphoreUseOptions {
 
 export interface AcquireSemaphoreFragmentProps extends AcquireSemaphoreOptions, SemaphoreDefinition, SemaphorePersistenceContext { }
 
-interface CleanResultSingleStateOptions extends Omit<SingleStateOptions, 'resultPath'> {
-  /**
-   * JSONPath expression to indicate where to inject the state's output
-   *
-   * The special value JsonPath.DISCARD will cause the state's
-   * input to become its output.
-   *
-   * @default JsonPath.DISCARD
-   */
-  readonly resultPath?: string;
-}
-export abstract class CleanResultSingleStateFragment extends StateMachineFragment {
-  /**
-   * Wrap all states in this state machine fragment up into a single state.
-   *
-   * NOTE: default settings will cause the state's input to become its output.
-   */
-  public toSingleState(options: CleanResultSingleStateOptions = { resultPath: JsonPath.DISCARD }): Parallel {
-    return super.toSingleState(options);
-  }
-}
-
-export class AcquireSemaphoreFragment extends CleanResultSingleStateFragment {
+export class AcquireSemaphoreFragment extends StateMachineFragment {
   public readonly startState: State;
   public readonly endStates: INextable[];
 
@@ -166,8 +146,8 @@ export class AcquireSemaphoreFragment extends CleanResultSingleStateFragment {
       errors: ['DynamoDB.AmazonDynamoDBException'],
       maxAttempts: 0,
     }).addRetry({
-      errors: [Errors.ALL],
       ...retryStrategy,
+      errors: [Errors.ALL],
     }).addCatch(
       initialize.addCatch(tryToAcquire, { errors: [Errors.ALL], resultPath: JsonPath.DISCARD }).next(tryToAcquire),
       {
@@ -212,7 +192,7 @@ export interface ReleaseSemaphoreOptions extends SemaphoreUseOptions {
 
 export interface ReleaseSemaphoreFragmentProps extends ReleaseSemaphoreOptions, SemaphorePersistenceContext { }
 
-export class ReleaseSemaphoreFragment extends CleanResultSingleStateFragment {
+export class ReleaseSemaphoreFragment extends StateMachineFragment {
   public readonly startState: State;
   public readonly endStates: INextable[];
 
@@ -261,8 +241,8 @@ export class ReleaseSemaphoreFragment extends CleanResultSingleStateFragment {
       errors: ['DynamoDB.ConditionalCheckFailedException'],
       maxAttempts: 0,
     }).addRetry({
-      errors: [Errors.ALL],
       ...retryStrategy,
+      errors: [Errors.ALL],
     }).addCatch(
       notFoundChain,
       {
@@ -313,7 +293,7 @@ interface CheckIfSemaphoreUsedByUserFragmentProps extends SemaphorePersistenceCo
   };
 }
 
-class CheckIfSemaphoreUsedByUserFragment extends CleanResultSingleStateFragment {
+class CheckIfSemaphoreUsedByUserFragment extends StateMachineFragment {
   public readonly startState: State;
   public readonly endStates: INextable[];
 

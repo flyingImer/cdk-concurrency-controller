@@ -8,35 +8,9 @@ import { PythonFunction } from 'monocdk/aws-lambda-python';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
 import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Chain, Map, Errors, IntegrationPattern, IStateMachine, Result } from 'monocdk/aws-stepfunctions';
 import { LambdaInvoke, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
-import { DistributedSemaphore } from '../src/index';
 import { DistributedSemaphore as DS } from '../src/semaphore';
 
 class TestStack extends Stack {
-  constructor(scope: Construct, id: string, props: StackProps = {}) {
-    super(scope, id, props);
-    const doWork = new LambdaInvoke(this, 'DoWork', {
-      lambdaFunction: new PythonFunction(this, 'DoWorkLambda', {
-        entry: path.join(__dirname, 'lambda'),
-        index: 'do_work_function/app.py',
-        handler: 'lambda_handler',
-        runtime: Runtime.PYTHON_3_8,
-        timeout: Duration.seconds(60),
-      }),
-      payload: TaskInput.fromObject({
-        Input: JsonPath.stringAt('$'),
-      }),
-      resultSelector: {
-        'payload.$': '$.Payload',
-      },
-      retryOnServiceExceptions: false,
-    });
-    new DistributedSemaphore(this, 'DistributedSemaphore', {
-      doWork,
-    });
-  }
-}
-
-class TestStackV2 extends Stack {
   constructor(scope: Construct, id: string, props: StackProps = {}) {
     super(scope, id, props);
     const lambda = new PythonFunction(this, 'DoWorkLambda', {
@@ -64,7 +38,6 @@ class TestStackV2 extends Stack {
       JsonPath.stringAt('$.accountId'),
       JsonPath.stringAt('$.region'),
     );
-    // const aSemaphoreName = 'Semaphore1';
     const ds = new DS(this, 'DistributedSemaphore', {
       semaphores: [
         { name: aSemaphoreName, concurrencyLimit: 5 },
@@ -72,18 +45,18 @@ class TestStackV2 extends Stack {
     });
 
     const semaphore = new StateMachine(this, 'Semaphore', {
-      definition: ds.acquire().toSingleState().next(
+      definition: ds.acquire().toSingleState({ resultPath: JsonPath.DISCARD }).next(
         doWork,
       ).next(
-        ds.release().toSingleState(),
+        ds.release().toSingleState({ resultPath: JsonPath.DISCARD }),
       ).next(
-        ds.acquire({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+        ds.acquire({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState({ resultPath: JsonPath.DISCARD }),
       ).next(
         new Pass(this, 'DoNothing'),
       ).next(
         doWork2,
       ).next(
-        ds.release({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+        ds.release({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState({ resultPath: JsonPath.DISCARD }),
       ),
       tracingEnabled: true,
       logs: {
@@ -217,9 +190,7 @@ class TestStackV2 extends Stack {
 class TestApp extends App {
   constructor() {
     super();
-
     new TestStack(this, 'ConcurrencyControllerExample');
-    new TestStackV2(this, 'ConcurrencyControllerExampleV2');
   }
 }
 
