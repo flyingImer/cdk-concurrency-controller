@@ -1,2 +1,2 @@
-export * from './fragment';
+export * from './fragments';
 export * from './semaphore';
