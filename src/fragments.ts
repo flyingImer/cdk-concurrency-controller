@@ -93,46 +93,46 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
     }
 
     const tryToAcquire = new DynamoUpdateItem(this, 'TryToAcquireSemaphore', {
-      comment: 'acquire a lock using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held locks and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the lock was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of locks have already been distributed or 2) if the current execution already owns a lock. The latter check is important to ensure the same execution doesn\'t increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given lockname has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.',
+      comment: 'Try to acquire a semaphore using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held semaphores and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the semaphore was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of semaphores have already been distributed or 2) if the current execution already owns a semaphore. The latter check is important to ensure the same execution doesn\'t increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given semaphoreName has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.',
       table: semaphoreTable.table,
       key: {
         [semaphoreTable.partitionKey.name]: DynamoAttributeValue.fromString(semaphoreName),
       },
       expressionAttributeNames: {
-        '#currentlockcount': semaphoreTable.countAttributeName,
-        '#lockownerid': semaphoreUserId,
+        '#currentInUseCount': semaphoreTable.countAttributeName,
+        '#semaphoreUserId': semaphoreUserId,
       },
       expressionAttributeValues: {
         ':increase': DynamoAttributeValue.fromNumber(1),
         ':limit': DynamoAttributeValue.fromNumber(concurrencyLimit),
-        ':lockacquiredtime': DynamoAttributeValue.fromString(JsonPath.stringAt('$$.State.EnteredTime')),
+        ':semaphoreUseAcquiredTime': DynamoAttributeValue.fromString(JsonPath.stringAt('$$.State.EnteredTime')),
       },
-      updateExpression: 'SET #currentlockcount = #currentlockcount + :increase, #lockownerid = :lockacquiredtime',
-      conditionExpression: '#currentlockcount <> :limit and attribute_not_exists(#lockownerid)',
+      updateExpression: 'SET #currentInUseCount = #currentInUseCount + :increase, #semaphoreUserId = :semaphoreUseAcquiredTime',
+      conditionExpression: '#currentInUseCount <> :limit and attribute_not_exists(#semaphoreUserId)',
       returnValues: DynamoReturnValues.UPDATED_NEW,
       resultPath: JsonPath.DISCARD, // TODO: [p1] maybe replace with unified task status reporting format? <state_name>-<enter_time>-<message>
     });
 
     const initialize = new DynamoPutItem(this, 'InitializeSemaphore', {
-      comment: 'This state handles the case where an item hasn\'t been created for this lock yet. In that case, it will insert an initial item that includes the lock name as the key and currentlockcount of 0. The Put to DynamoDB includes a conditonal expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.',
+      comment: `This state handles the case where an item hasn\'t been created for this semaphore yet. In that case, it will insert an initial item that includes the semaphore name as the key and ${semaphoreTable.countAttributeName} of 0. The Put to DynamoDB includes a conditional expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.`,
       table: semaphoreTable.table,
       item: {
         [semaphoreTable.partitionKey.name]: DynamoAttributeValue.fromString(semaphoreName),
         [semaphoreTable.countAttributeName]: DynamoAttributeValue.fromNumber(0),
       },
       expressionAttributeValues: {
-        ':lockname': DynamoAttributeValue.fromString(semaphoreName),
+        ':semaphoreName': DynamoAttributeValue.fromString(semaphoreName),
       },
-      conditionExpression: `${semaphoreTable.partitionKey.name} <> :lockname`,
+      conditionExpression: `${semaphoreTable.partitionKey.name} <> :semaphoreName`,
       resultPath: JsonPath.DISCARD,
     });
 
     const acquisitionConfirmedContinue = new Pass(this, 'SemaphoreAcquisitionConfirmedContinue', {
-      comment: 'In this state, we have confimed that lock is already held, so we pass the original execution input into the the function that does the work.',
+      comment: 'In this state, we have confirmed that semaphore is already held, so we pass the original execution input into the the function that does the work.',
       resultPath: JsonPath.DISCARD,
     });
     const waitToAcquire = new Wait(this, 'WaitToAcquireSemaphore', {
-      comment: 'If the lock indeed not been succesfully Acquired, then wait for a bit before trying again.',
+      comment: 'If the semaphore indeed not been successfully Acquired, then wait for a bit before trying again.',
       time: waitTime,
     });
 
@@ -152,12 +152,12 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
       initialize.addCatch(tryToAcquire, { errors: [Errors.ALL], resultPath: JsonPath.DISCARD }).next(tryToAcquire),
       {
         errors: ['DynamoDB.AmazonDynamoDBException'],
-        resultPath: '$.lockinfo.acquisitionerror', // FIXME:
+        resultPath: '$.semaphoreInfo.acquisitionError',
       },
     ).addCatch(
       new CheckIfSemaphoreUsedByUserFragment(this, 'CheckIfSemaphoreUsedByUser', {
         semaphoreUseResult: {
-          outcomePath: '$.lockinfo.currentlockitem', // FIXME:
+          outcomePath: '$.semaphoreInfo.currentSemaphoreUse',
           foundAction: acquisitionConfirmedContinue.next(acquired),
           notFoundAction: waitToAcquire.next(tryToAcquire), // TODO: starving?
         },
@@ -170,7 +170,7 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
       }),
       {
         errors: ['DynamoDB.ConditionalCheckFailedException'],
-        resultPath: '$.lockinfo.acquisitionerror', // FIXME:
+        resultPath: '$.semaphoreInfo.acquisitionError',
       },
     ).next(
       acquired,
@@ -212,20 +212,20 @@ export class ReleaseSemaphoreFragment extends StateMachineFragment {
     } = props;
 
     const tryToRelease = new DynamoUpdateItem(this, 'TryToReleaseSemaphore', {
-      comment: 'If this lockowerid is still there, then clean it up and release the lock',
+      comment: 'If this semaphoreUserId is still there, then clean it up and release the semaphore',
       table: semaphoreTable.table,
       key: {
         [semaphoreTable.partitionKey.name]: DynamoAttributeValue.fromString(semaphoreName),
       },
       expressionAttributeNames: {
-        '#currentlockcount': semaphoreTable.countAttributeName,
-        '#lockownerid': semaphoreUserId,
+        '#currentInUseCount': semaphoreTable.countAttributeName,
+        '#semaphoreUserId': semaphoreUserId,
       },
       expressionAttributeValues: {
         ':decrease': DynamoAttributeValue.fromNumber(1),
       },
-      updateExpression: 'SET #currentlockcount = #currentlockcount - :decrease REMOVE #lockownerid',
-      conditionExpression: 'attribute_exists(#lockownerid)',
+      updateExpression: 'SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId',
+      conditionExpression: 'attribute_exists(#semaphoreUserId)',
       returnValues: DynamoReturnValues.UPDATED_NEW,
       resultPath: JsonPath.DISCARD,
     });
@@ -259,7 +259,7 @@ export class ReleaseSemaphoreFragment extends StateMachineFragment {
     } else {
       const checkSemaphoreUse = new CheckIfSemaphoreUsedByUserFragment(this, 'CheckIfSemaphoreUsedByUser', {
         semaphoreUseResult: {
-          outcomePath: '$.lockinfo.currentlockitem', // FIXME:
+          outcomePath: '$.semaphoreInfo.currentSemaphoreUse',
           foundAction: releaseChain,
           notFoundAction: notFoundChain,
         },
@@ -319,16 +319,16 @@ class CheckIfSemaphoreUsedByUserFragment extends StateMachineFragment {
     const itemStringPath = `${outcomePath}.${itemStringKey}`;
 
     const getSemaphoreUse = new DynamoGetItem(this, 'GetSemaphoreUse', {
-      comment: 'Get info from DDB for the lock item.',
+      comment: 'Get info from DDB for the semaphore item.',
       table: semaphoreTable.table,
       key: {
         [semaphoreTable.partitionKey.name]: DynamoAttributeValue.fromString(semaphoreName),
       },
       expressionAttributeNames: {
-        '#lockownerid': semaphoreUserId,
+        '#semaphoreUserId': semaphoreUserId,
       },
       projectionExpression: [
-        new DynamoProjectionExpression().withAttribute('#lockownerid'),
+        new DynamoProjectionExpression().withAttribute('#semaphoreUserId'),
       ],
       resultPath: outcomePath,
       consistentRead: true,
@@ -345,7 +345,7 @@ class CheckIfSemaphoreUsedByUserFragment extends StateMachineFragment {
     });
 
     const checkIfFoundSemaphoreUse = new Choice(this, 'CheckIfFoundSemaphoreUse', {
-      comment: 'This state checks to see if the locker owner already holds a lock. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a lock.',
+      comment: 'This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.',
     });
 
     this.startState = getSemaphoreUse;
