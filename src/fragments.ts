@@ -100,7 +100,7 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
       },
       expressionAttributeNames: {
         '#currentlockcount': semaphoreTable.countAttributeName,
-        '#lockownerid.$': semaphoreUserId, // TODO: remove '.$' to allow JsonPath expressions?
+        '#lockownerid': semaphoreUserId,
       },
       expressionAttributeValues: {
         ':increase': DynamoAttributeValue.fromNumber(1),
@@ -219,7 +219,7 @@ export class ReleaseSemaphoreFragment extends StateMachineFragment {
       },
       expressionAttributeNames: {
         '#currentlockcount': semaphoreTable.countAttributeName,
-        '#lockownerid.$': semaphoreUserId,
+        '#lockownerid': semaphoreUserId,
       },
       expressionAttributeValues: {
         ':decrease': DynamoAttributeValue.fromNumber(1),
@@ -325,7 +325,7 @@ class CheckIfSemaphoreUsedByUserFragment extends StateMachineFragment {
         [semaphoreTable.partitionKey.name]: DynamoAttributeValue.fromString(semaphoreName),
       },
       expressionAttributeNames: {
-        '#lockownerid.$': semaphoreUserId,
+        '#lockownerid': semaphoreUserId,
       },
       projectionExpression: [
         new DynamoProjectionExpression().withAttribute('#lockownerid'),

@@ -1,6 +1,6 @@
 import { Construct } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { StateMachineFragment } from 'monocdk/aws-stepfunctions';
+import { JsonPath, StateMachineFragment } from 'monocdk/aws-stepfunctions';
 import { AcquireSemaphoreFragment, AcquireSemaphoreOptions, ReleaseSemaphoreFragment, ReleaseSemaphoreOptions, SemaphoreDefinition, SemaphoreTableDefinition, SemaphoreUseOptions } from './fragments';
 
 export interface DistributedSemaphoreProps {
@@ -33,7 +33,7 @@ export class DistributedSemaphore extends Construct {
     // TODO: default name cannot have JsonPath expression
     // TODO: default concurrency limit cannot below 0
     this.defaultSemaphoreName = defaultSemaphore.name;
-    this.defaultSemaphoreUseOptions = { name: this.defaultSemaphoreName, userId: '$$.Execution.Id' }; // TODO: how to communicate default userId?
+    this.defaultSemaphoreUseOptions = { name: this.defaultSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }; // TODO: how to communicate default userId?
 
     this.semaphoreMap.set(this.defaultSemaphoreName, defaultSemaphore);
     !!semaphores && semaphores.forEach((semaphore) => {

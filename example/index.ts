@@ -50,13 +50,13 @@ class TestStack extends Stack {
       ).next(
         ds.release().toSingleState({ resultPath: JsonPath.DISCARD }),
       ).next(
-        ds.acquire({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState({ resultPath: JsonPath.DISCARD }),
+        ds.acquire({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
       ).next(
         new Pass(this, 'DoNothing'),
       ).next(
         doWork2,
       ).next(
-        ds.release({ name: aSemaphoreName, userId: '$$.Execution.Id' }).toSingleState({ resultPath: JsonPath.DISCARD }),
+        ds.release({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
       ),
       tracingEnabled: true,
       logs: {
@@ -119,7 +119,7 @@ class TestStack extends Stack {
     ds.semaphoreNames.map(
       name => ds.release({
         name,
-        userId: '$$.Execution.Input.detail.executionArn',
+        userId: JsonPath.stringAt('$$.Execution.Input.detail.executionArn'),
         checkSemaphoreUseFirst: true,
         retryStrategy: {
           interval: Duration.seconds(5),

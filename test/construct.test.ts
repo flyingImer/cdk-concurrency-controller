@@ -26,23 +26,23 @@ test('snapshot test', () => {
     ).next(
       ds.release().toSingleState(),
     ).next(
-      ds.acquire({ name: dynamicSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+      ds.acquire({ name: dynamicSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState(),
     ).next(
       new Pass(stack, 'DoNothing'),
     ).next(
-      ds.release({ name: dynamicSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+      ds.release({ name: dynamicSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState(),
     ).next(
-      ds.acquire({ name: staticSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+      ds.acquire({ name: staticSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState(),
     ).next(
       new Pass(stack, 'AllGood'),
     ).next(
-      ds.release({ name: staticSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+      ds.release({ name: staticSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState(),
     ).next(
-      ds.acquire({ name: dynamicSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+      ds.acquire({ name: dynamicSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState(),
     ).next(
       new Pass(stack, 'ItWorks'),
     ).next(
-      ds.release({ name: dynamicSemaphoreName, userId: '$$.Execution.Id' }).toSingleState(),
+      ds.release({ name: dynamicSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState(),
     ),
   });
 
