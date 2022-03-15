@@ -39,8 +39,8 @@ interface SemaphorePersistenceContext {
 
 interface SemaphoreUseDefinition extends SemaphoreName {
   /**
-    * The semaphore user id to acquire/release resource usage.
-    */
+   * The semaphore user id to acquire/release resource usage.
+   */
   readonly userId: string;
 }
 
