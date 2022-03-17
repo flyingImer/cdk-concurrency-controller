@@ -160,6 +160,10 @@ export class DistributedSemaphore extends Construct {
     return Array.from(this.semaphoreMap.keys());
   }
 
+  public get defaultSemaphore(): SemaphoreDefinition {
+    return this.semaphoreMap.get(this.defaultSemaphoreName)!;
+  }
+
   public get acquireSemaphoreStateMachine(): IStateMachine {
     return this.acquireStateMachine;
   }

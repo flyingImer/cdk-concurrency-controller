@@ -308,6 +308,7 @@ Return whether the given object is a Construct.
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.acquireSemaphoreStateMachine">acquireSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.cleanupSemaphoreStateMachine">cleanupSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.defaultSemaphore">defaultSemaphore</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a></code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.releaseSemaphoreStateMachine">releaseSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.semaphoreNames">semaphoreNames</a></code> | <code>string[]</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | *No description.* |
@@ -343,6 +344,16 @@ public readonly cleanupSemaphoreStateMachine: IStateMachine;
 ```
 
 - *Type:* monocdk.aws_stepfunctions.IStateMachine
+
+---
+
+##### `defaultSemaphore`<sup>Required</sup> <a name="defaultSemaphore" id="cdk-concurrency-controller.DistributedSemaphore.property.defaultSemaphore"></a>
+
+```typescript
+public readonly defaultSemaphore: SemaphoreDefinition;
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>
 
 ---
 
