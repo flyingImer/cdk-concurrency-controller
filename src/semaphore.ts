@@ -13,7 +13,7 @@ export interface DistributedSemaphoreProps {
    *
    * NOTE: the default semaphore name cannot use JsonPath expression for the sake of a safe fallback.
    *
-   * @default '{ name: "DefaultSemaphore", concurrencyLimit: 5 }'
+   * @default '{ name: "DefaultSemaphore", concurrencyLimit: '5' }'
    */
   readonly defaultSemaphore?: SemaphoreDefinition;
 

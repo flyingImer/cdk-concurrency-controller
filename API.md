@@ -845,7 +845,7 @@ public readonly defaultSemaphore: SemaphoreDefinition;
 ```
 
 - *Type:* <a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>
-- *Default:* '{ name: "DefaultSemaphore", concurrencyLimit: 5 }'
+- *Default:* '{ name: "DefaultSemaphore", concurrencyLimit: '5' }'
 
 The default semaphore settings.
 
