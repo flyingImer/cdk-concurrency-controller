@@ -1,6 +1,6 @@
 import { Construct, Duration } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { INextable, IntegrationPattern, IStateMachine, JsonPath, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
+import { INextable, IntegrationPattern, isPositiveInteger, IStateMachine, JsonPath, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
 import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 import { Rule } from 'monocdk/lib/aws-events';
 import { SfnStateMachine } from 'monocdk/lib/aws-events-targets';
@@ -36,8 +36,6 @@ export class DistributedSemaphore extends Construct {
     super(scope, id);
 
     const { defaultSemaphore = { name: 'DefaultSemaphore', concurrencyLimit: '5' }, semaphores } = props;
-    // TODO: default name cannot have JsonPath expression
-    // TODO: default concurrency limit cannot below 0
     this.defaultSemaphoreName = defaultSemaphore.name;
     this.defaultSemaphoreUseOptions = { name: this.defaultSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }; // TODO: how to communicate default userId?
 
@@ -48,6 +46,7 @@ export class DistributedSemaphore extends Construct {
       }
       this.semaphoreMap.set(semaphore.name, semaphore);
     });
+    this.validateSemaphoreDefinition();
 
     const table = new Table(this, 'SemaphoreTable', {
       partitionKey: {
@@ -156,8 +155,8 @@ export class DistributedSemaphore extends Construct {
     });
   }
 
-  public get semaphoreNames(): string[] {
-    return Array.from(this.semaphoreMap.keys());
+  public get allSemaphores(): SemaphoreDefinition[] {
+    return Array.from(this.semaphoreMap.values());
   }
 
   public get defaultSemaphore(): SemaphoreDefinition {
@@ -176,7 +175,22 @@ export class DistributedSemaphore extends Construct {
     return this.cleanupStateMachine;
   }
 
-  private validateSemaphoreUseOptions(options: SemaphoreUseOptions) {
+  private validateSemaphoreDefinition(): void {
+    this.semaphoreMap.forEach((definition) => {
+      const { name, concurrencyLimit } = definition;
+      if (!name || name.length === 0) {
+        throw new Error('Semaphore name must be a non empty value.');
+      }
+      if (!concurrencyLimit || concurrencyLimit.length === 0) {
+        throw new Error('Semaphore concurrency limit must be a non empty value.');
+      }
+      if (!JsonPath.isEncodedJsonPath(concurrencyLimit) && !isPositiveInteger(new Number(concurrencyLimit).valueOf())) {
+        throw new Error('Semaphore concurrency limit literal string must be a positive integer value.');
+      }
+    });
+  }
+
+  private validateSemaphoreUseOptions(options: SemaphoreUseOptions): void {
     if (!this.semaphoreMap.has(options.name)) {
       throw new Error(`Semaphore ${options.name} is not defined.`);
     }
