@@ -844,8 +844,31 @@ const distributedSemaphoreProps: DistributedSemaphoreProps = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.acquireSemaphoreStateMachineProps">acquireSemaphoreStateMachineProps</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps">SemaphoreStateMachineProps</a></code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.cleanupSemaphoreStateMachineProps">cleanupSemaphoreStateMachineProps</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps">SemaphoreStateMachineProps</a></code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.defaultSemaphore">defaultSemaphore</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a></code> | The default semaphore settings. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.releaseSemaphoreStateMachineProps">releaseSemaphoreStateMachineProps</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps">SemaphoreStateMachineProps</a></code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps.property.semaphores">semaphores</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>[]</code> | *No description.* |
+
+---
+
+##### `acquireSemaphoreStateMachineProps`<sup>Optional</sup> <a name="acquireSemaphoreStateMachineProps" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.acquireSemaphoreStateMachineProps"></a>
+
+```typescript
+public readonly acquireSemaphoreStateMachineProps: SemaphoreStateMachineProps;
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreStateMachineProps">SemaphoreStateMachineProps</a>
+
+---
+
+##### `cleanupSemaphoreStateMachineProps`<sup>Optional</sup> <a name="cleanupSemaphoreStateMachineProps" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.cleanupSemaphoreStateMachineProps"></a>
+
+```typescript
+public readonly cleanupSemaphoreStateMachineProps: SemaphoreStateMachineProps;
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreStateMachineProps">SemaphoreStateMachineProps</a>
 
 ---
 
@@ -861,6 +884,16 @@ public readonly defaultSemaphore: SemaphoreDefinition;
 The default semaphore settings.
 
 It is used when no other pattern of semaphore applied. This can be used as a quick start when working with a single arbitrary resource.  NOTE: the default semaphore name cannot use JsonPath expression for the sake of a safe fallback.
+
+---
+
+##### `releaseSemaphoreStateMachineProps`<sup>Optional</sup> <a name="releaseSemaphoreStateMachineProps" id="cdk-concurrency-controller.DistributedSemaphoreProps.property.releaseSemaphoreStateMachineProps"></a>
+
+```typescript
+public readonly releaseSemaphoreStateMachineProps: SemaphoreStateMachineProps;
+```
+
+- *Type:* <a href="#cdk-concurrency-controller.SemaphoreStateMachineProps">SemaphoreStateMachineProps</a>
 
 ---
 
@@ -1160,6 +1193,65 @@ public readonly name: string;
 The name for the semaphore.
 
 Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+
+---
+
+### SemaphoreStateMachineProps <a name="SemaphoreStateMachineProps" id="cdk-concurrency-controller.SemaphoreStateMachineProps"></a>
+
+#### Initializer <a name="Initializer" id="cdk-concurrency-controller.SemaphoreStateMachineProps.Initializer"></a>
+
+```typescript
+import { SemaphoreStateMachineProps } from 'cdk-concurrency-controller'
+
+const semaphoreStateMachineProps: SemaphoreStateMachineProps = { ... }
+```
+
+#### Properties <a name="Properties" id="Properties"></a>
+
+| **Name** | **Type** | **Description** |
+| --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.logs">logs</a></code> | <code>monocdk.aws_stepfunctions.LogOptions</code> | Defines what execution history events are logged and where they are logged. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for this state machine. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.tracingEnabled">tracingEnabled</a></code> | <code>boolean</code> | Specifies whether Amazon X-Ray tracing is enabled for this state machine. |
+
+---
+
+##### `logs`<sup>Optional</sup> <a name="logs" id="cdk-concurrency-controller.SemaphoreStateMachineProps.property.logs"></a>
+
+```typescript
+public readonly logs: LogOptions;
+```
+
+- *Type:* monocdk.aws_stepfunctions.LogOptions
+- *Default:* No logging
+
+Defines what execution history events are logged and where they are logged.
+
+---
+
+##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout"></a>
+
+```typescript
+public readonly timeout: Duration;
+```
+
+- *Type:* monocdk.Duration
+- *Default:* No timeout
+
+Maximum run time for this state machine.
+
+---
+
+##### `tracingEnabled`<sup>Optional</sup> <a name="tracingEnabled" id="cdk-concurrency-controller.SemaphoreStateMachineProps.property.tracingEnabled"></a>
+
+```typescript
+public readonly tracingEnabled: boolean;
+```
+
+- *Type:* boolean
+- *Default:* false
+
+Specifies whether Amazon X-Ray tracing is enabled for this state machine.
 
 ---
 

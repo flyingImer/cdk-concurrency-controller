@@ -1,6 +1,6 @@
 import { Construct, Duration } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { INextable, IntegrationPattern, isPositiveInteger, IStateMachine, JsonPath, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
+import { INextable, IntegrationPattern, isPositiveInteger, IStateMachine, JsonPath, LogOptions, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
 import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 import { Rule } from 'monocdk/lib/aws-events';
 import { SfnStateMachine } from 'monocdk/lib/aws-events-targets';
@@ -18,6 +18,10 @@ export interface DistributedSemaphoreProps {
   readonly defaultSemaphore?: SemaphoreDefinition;
 
   readonly semaphores?: SemaphoreDefinition[];
+
+  readonly acquireSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
+  readonly releaseSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
+  readonly cleanupSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
 }
 
 export class DistributedSemaphore extends Construct {
@@ -35,7 +39,7 @@ export class DistributedSemaphore extends Construct {
   constructor(scope: Construct, id: string, props: DistributedSemaphoreProps = {}) {
     super(scope, id);
 
-    const { defaultSemaphore = { name: 'DefaultSemaphore', concurrencyLimit: '5' }, semaphores } = props;
+    const { defaultSemaphore = { name: 'DefaultSemaphore', concurrencyLimit: '5' }, semaphores, acquireSemaphoreStateMachineProps, releaseSemaphoreStateMachineProps, cleanupSemaphoreStateMachineProps: cleanupStateMachineProps } = props;
     this.defaultSemaphoreName = defaultSemaphore.name;
     this.defaultSemaphoreUseOptions = { name: this.defaultSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }; // TODO: how to communicate default userId?
 
@@ -62,7 +66,6 @@ export class DistributedSemaphore extends Construct {
       countAttributeName: 'CurrentInUseCount',
     };
 
-    // TODO: enable logging
     this.acquireStateMachine = new StateMachine(this, 'AcquireSemaphoreStateMachine', {
       definition: new AcquireSemaphoreFragment(this, 'AcquireSemaphoreFragment', {
         name: JsonPath.stringAt('$.name'),
@@ -75,6 +78,7 @@ export class DistributedSemaphore extends Construct {
           backoffRate: 2,
         },
       }),
+      ...acquireSemaphoreStateMachineProps,
     });
 
     this.releaseStateMachine = new StateMachine(this, 'ReleaseSemaphoreStateMachine', {
@@ -83,6 +87,7 @@ export class DistributedSemaphore extends Construct {
         userId: JsonPath.stringAt('$.userId'),
         semaphoreTable: this.semaphoreTable,
       }),
+      ...releaseSemaphoreStateMachineProps,
     });
 
     this.cleanupStateMachine = new StateMachine(this, 'CleanupSemaphoreStateMachine', {
@@ -102,6 +107,7 @@ export class DistributedSemaphore extends Construct {
           backoffRate: 1.4,
         },
       })),
+      ...cleanupStateMachineProps,
     });
 
     new Rule(this, 'RunForIncomplete', {
@@ -252,4 +258,25 @@ class ReleaseViaStartExecutionFragment extends StateMachineFragment {
     });
     this.endStates = this.startState.endStates;
   }
+}
+
+export interface SemaphoreStateMachineProps {
+  /**
+   * Maximum run time for this state machine
+   *
+   * @default No timeout
+   */
+  readonly timeout?: Duration;
+  /**
+   * Defines what execution history events are logged and where they are logged.
+   *
+   * @default No logging
+   */
+  readonly logs?: LogOptions;
+  /**
+   * Specifies whether Amazon X-Ray tracing is enabled for this state machine.
+   *
+   * @default false
+   */
+  readonly tracingEnabled?: boolean;
 }

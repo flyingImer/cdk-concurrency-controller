@@ -43,6 +43,42 @@ class TestStack extends Stack {
       semaphores: [
         { name: aSemaphoreName, concurrencyLimit: '5' },
       ],
+      acquireSemaphoreStateMachineProps: {
+        timeout: Duration.days(1),
+        logs: {
+          destination: new LogGroup(this, 'AcquireSemaphoreLogGroup', {
+            retention: RetentionDays.TWO_MONTHS,
+            removalPolicy: RemovalPolicy.DESTROY,
+          }),
+          includeExecutionData: true,
+          level: LogLevel.ALL,
+        },
+        tracingEnabled: true,
+      },
+      releaseSemaphoreStateMachineProps: {
+        timeout: Duration.days(1),
+        logs: {
+          destination: new LogGroup(this, 'ReleaseSemaphoreLogGroup', {
+            retention: RetentionDays.TWO_MONTHS,
+            removalPolicy: RemovalPolicy.DESTROY,
+          }),
+          includeExecutionData: true,
+          level: LogLevel.ALL,
+        },
+        tracingEnabled: true,
+      },
+      cleanupSemaphoreStateMachineProps: {
+        timeout: Duration.days(1),
+        logs: {
+          destination: new LogGroup(this, 'CleanupSemaphoreLogGroup', {
+            retention: RetentionDays.TWO_MONTHS,
+            removalPolicy: RemovalPolicy.DESTROY,
+          }),
+          includeExecutionData: true,
+          level: LogLevel.ALL,
+        },
+        tracingEnabled: true,
+      },
     });
 
     const semaphore = new StateMachine(this, 'Semaphore', {

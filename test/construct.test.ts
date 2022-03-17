@@ -1,8 +1,9 @@
-import { App, Stack } from 'monocdk';
-import { Template } from 'monocdk/assertions';
-import { JsonPath, Pass, StateMachine } from 'monocdk/aws-stepfunctions';
+import { App, Duration, RemovalPolicy, Stack } from 'monocdk';
+import { Match, Template } from 'monocdk/assertions';
+import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
+import { JsonPath, LogLevel, Pass, StateMachine } from 'monocdk/aws-stepfunctions';
 import { SemaphoreDefinition } from '../src/fragments';
-import { DistributedSemaphore } from '../src/semaphore';
+import { DistributedSemaphore, SemaphoreStateMachineProps } from '../src/semaphore';
 
 test('snapshot test', () => {
   // GIVEN
@@ -182,5 +183,120 @@ describe('Semaphore definition', () => {
     expect(() => new DistributedSemaphore(stack, 'DistributedSemaphore', {
       semaphores: customSemaphores,
     })).toThrowError();
+  });
+});
+
+describe('Semaphore state machine props', () => {
+  let stack: Stack;
+
+  beforeEach(() => {
+    stack = new Stack();
+  });
+
+  it('should accept state machine props if provided', () => {
+    // GIVEN
+    const acquireSemaphoreStateMachineProps: SemaphoreStateMachineProps = {
+      timeout: Duration.days(1),
+      logs: {
+        destination: new LogGroup(stack, 'AcquireSemaphoreLogGroup', {
+          retention: RetentionDays.ONE_YEAR,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+        includeExecutionData: true,
+        level: LogLevel.ALL,
+      },
+      tracingEnabled: true,
+    };
+
+    const releaseSemaphoreStateMachineProps: SemaphoreStateMachineProps = {
+      timeout: Duration.minutes(10),
+      logs: {
+        destination: new LogGroup(stack, 'ReleaseSemaphoreLogGroup', {
+          retention: RetentionDays.TWO_MONTHS,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+        includeExecutionData: false,
+        level: LogLevel.ERROR,
+      },
+      tracingEnabled: true,
+    };
+
+    const cleanupSemaphoreStateMachineProps: SemaphoreStateMachineProps = {
+      timeout: Duration.minutes(5),
+      logs: {
+        destination: new LogGroup(stack, 'CleanupSemaphoreLogGroup', {
+          retention: RetentionDays.TWO_YEARS,
+        }),
+        level: LogLevel.FATAL,
+      },
+    };
+
+    // WHEN
+    new DistributedSemaphore(stack, 'DistributedSemaphore', {
+      acquireSemaphoreStateMachineProps,
+      releaseSemaphoreStateMachineProps,
+      cleanupSemaphoreStateMachineProps,
+    });
+
+    // THEN
+    const template = Template.fromStack(stack);
+    expect(template.resourceCountIs('AWS::StepFunctions::StateMachine', 3));
+    expect(template.resourceCountIs('AWS::Logs::LogGroup', 3));
+    expect(template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      LoggingConfiguration: {
+        IncludeExecutionData: true,
+        Level: LogLevel.ALL,
+      },
+      TracingConfiguration: {
+        Enabled: true,
+      },
+    }));
+    expect(template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      LoggingConfiguration: {
+        IncludeExecutionData: false,
+        Level: LogLevel.ERROR,
+      },
+      TracingConfiguration: {
+        Enabled: true,
+      },
+    }));
+    expect(template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      LoggingConfiguration: {
+        Level: LogLevel.FATAL,
+      },
+    }));
+    expect(template.hasResourceProperties('AWS::Logs::LogGroup', {
+      RetentionInDays: RetentionDays.ONE_YEAR,
+    }));
+    expect(template.hasResourceProperties('AWS::Logs::LogGroup', {
+      RetentionInDays: RetentionDays.TWO_MONTHS,
+    }));
+    expect(template.hasResourceProperties('AWS::Logs::LogGroup', {
+      RetentionInDays: RetentionDays.TWO_YEARS,
+    }));
+  });
+
+  it('should do nothing if not provided', () => {
+    // GIVEN
+
+    // WHEN
+    new DistributedSemaphore(stack, 'DistributedSemaphore', {});
+
+    // THEN
+    const template = Template.fromStack(stack);
+    expect(template.resourceCountIs('AWS::StepFunctions::StateMachine', 3));
+    expect(template.resourceCountIs('AWS::Logs::LogGroup', 0));
+    expect(template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      LoggingConfiguration: Match.absent(),
+      TracingConfiguration: Match.absent(),
+    }));
+    expect(template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      LoggingConfiguration: Match.absent(),
+      TracingConfiguration: Match.absent(),
+    }));
+    expect(template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+      LoggingConfiguration: Match.absent(),
+      TracingConfiguration: Match.absent(),
+    }));
   });
 });
