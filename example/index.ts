@@ -1,12 +1,10 @@
 // TODO: migrate Construct for cdk v2
 import * as path from 'path';
 import { Construct, Stack, StackProps, App, Duration, RemovalPolicy } from 'monocdk';
-import { Rule } from 'monocdk/aws-events';
-import { SfnStateMachine } from 'monocdk/aws-events-targets';
 import { Runtime } from 'monocdk/aws-lambda';
 import { PythonFunction } from 'monocdk/aws-lambda-python';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Chain, Map, Errors, IntegrationPattern, IStateMachine, Result } from 'monocdk/aws-stepfunctions';
+import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Map, Errors, IntegrationPattern, IStateMachine, Result } from 'monocdk/aws-stepfunctions';
 import { LambdaInvoke, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 import { DistributedSemaphore as DS } from '../src/semaphore';
 
@@ -31,32 +29,35 @@ class TestStack extends Stack {
       retryOnServiceExceptions: false,
       resultPath: '$.workResult',
     };
-    const doWork = new LambdaInvoke(this, 'DoWork', doWorkProps);
-    const doWork2 = new LambdaInvoke(this, 'DoWork2', doWorkProps);
     const aSemaphoreName = JsonPath.format(
       '{}-{}-getCall',
       JsonPath.stringAt('$.accountId'),
       JsonPath.stringAt('$.region'),
     );
-    const ds = new DS(this, 'DistributedSemaphore', {
+
+    const dsn = new DS(this, 'DistributedSemaphore', {
+      defaultSemaphore: {
+        name: 'DefaultSemaphore',
+        concurrencyLimit: '2',
+      },
       semaphores: [
-        { name: aSemaphoreName, concurrencyLimit: 5 },
+        { name: aSemaphoreName, concurrencyLimit: '5' },
       ],
     });
 
     const semaphore = new StateMachine(this, 'Semaphore', {
-      definition: ds.acquire().toSingleState({ resultPath: JsonPath.DISCARD }).next(
-        doWork,
+      definition: dsn.acquire().toSingleState({ resultPath: JsonPath.DISCARD }).next(
+        new LambdaInvoke(this, 'DoWork', doWorkProps),
       ).next(
-        ds.release().toSingleState({ resultPath: JsonPath.DISCARD }),
+        dsn.release().toSingleState({ resultPath: JsonPath.DISCARD }),
       ).next(
-        ds.acquire({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
+        dsn.acquire({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
       ).next(
         new Pass(this, 'DoNothing'),
       ).next(
-        doWork2,
+        new LambdaInvoke(this, 'DoWork2', doWorkProps),
       ).next(
-        ds.release({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
+        dsn.release({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
       ),
       tracingEnabled: true,
       logs: {
@@ -69,32 +70,8 @@ class TestStack extends Stack {
       },
     });
 
-    const semaphoreCleanup = new StateMachine(this, 'SemaphoreCleanup', {
-      definition: this.buildCleanup(ds),
-      tracingEnabled: true,
-      logs: {
-        destination: new LogGroup(this, 'SemaphoreCleanupLogGroup', {
-          retention: RetentionDays.TWO_MONTHS,
-          removalPolicy: RemovalPolicy.DESTROY,
-        }),
-        includeExecutionData: true,
-        level: LogLevel.ALL,
-      },
-    });
-
-    new Rule(this, 'RunForIncomplete', {
-      targets: [new SfnStateMachine(semaphoreCleanup)],
-      eventPattern: {
-        source: ['aws.states'],
-        detail: {
-          stateMachineArn: [semaphore.stateMachineArn],
-          status: ['FAILED', 'TIMED_OUT', 'ABORTED'],
-        },
-      },
-    });
-
     new StateMachine(this, 'SemaphoreTesting', {
-      definition: this.buildTesting(100, semaphore),
+      definition: this.buildTesting(10, semaphore),
       tracingEnabled: true,
       logs: {
         destination: new LogGroup(this, 'SemaphoreTestingLogGroup', {
@@ -107,41 +84,15 @@ class TestStack extends Stack {
     });
   }
 
-  private buildCleanup(ds: DS): IChainable {
-    const generateDefaultInput = new Pass(this, 'GenerateDefaultInput', {
-      parameters: {
-        OriginalInput: JsonPath.stringToJson(JsonPath.stringAt('$$.Execution.Input.detail.input')),
-      },
-      outputPath: '$.OriginalInput',
-    });
-
-    let prev = Chain.start(generateDefaultInput);
-    ds.semaphoreNames.map(
-      name => ds.release({
-        name,
-        userId: JsonPath.stringAt('$$.Execution.Input.detail.executionArn'),
-        checkSemaphoreUseFirst: true,
-        retryStrategy: {
-          interval: Duration.seconds(5),
-          maxAttempts: 20,
-          backoffRate: 1.4,
-        },
-      }).toSingleState({ resultPath: JsonPath.DISCARD }),
-    ).forEach(curr => {
-      prev = prev.next(curr);
-    });
-
-    return prev;
-  }
-
   private buildTesting(concurrentInputs: number, targetStateMachine: IStateMachine): IChainable {
-    const generateDefaultInput = new Pass(this, 'GenerateTestingInput', {
+    const targetId = targetStateMachine.node.id;
+    const generateDefaultInput = new Pass(this, `GenerateTestingInput${targetId}`, {
       parameters: {
         iterations: Array.from({ length: concurrentInputs }, (_, i) => i + 1),
       },
     });
 
-    const startInParallel = new Map(this, 'StartInParallel', {
+    const startInParallel = new Map(this, `StartInParallel${targetId}`, {
       maxConcurrency: 0,
       itemsPath: '$.iterations',
       parameters: {
@@ -150,7 +101,7 @@ class TestStack extends Stack {
       },
     });
 
-    const runChildStateMachine = new StepFunctionsStartExecution(this, 'RunChildStateMachine', {
+    const runChildStateMachine = new StepFunctionsStartExecution(this, `RunChildStateMachine${targetId}`, {
       stateMachine: targetStateMachine,
       integrationPattern: IntegrationPattern.RUN_JOB,
       input: TaskInput.fromObject({
@@ -162,7 +113,7 @@ class TestStack extends Stack {
       },
     });
 
-    const clearResults = new Pass(this, 'ClearResults', {
+    const clearResults = new Pass(this, `ClearResults${targetId}`, {
       result: Result.fromString('Done'),
     });
 

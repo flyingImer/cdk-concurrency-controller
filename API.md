@@ -306,6 +306,9 @@ Return whether the given object is a Construct.
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.acquireSemaphoreStateMachine">acquireSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.cleanupSemaphoreStateMachine">cleanupSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.releaseSemaphoreStateMachine">releaseSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.semaphoreNames">semaphoreNames</a></code> | <code>string[]</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | *No description.* |
 
@@ -320,6 +323,36 @@ public readonly node: ConstructNode;
 - *Type:* monocdk.ConstructNode
 
 The construct tree node associated with this construct.
+
+---
+
+##### `acquireSemaphoreStateMachine`<sup>Required</sup> <a name="acquireSemaphoreStateMachine" id="cdk-concurrency-controller.DistributedSemaphore.property.acquireSemaphoreStateMachine"></a>
+
+```typescript
+public readonly acquireSemaphoreStateMachine: IStateMachine;
+```
+
+- *Type:* monocdk.aws_stepfunctions.IStateMachine
+
+---
+
+##### `cleanupSemaphoreStateMachine`<sup>Required</sup> <a name="cleanupSemaphoreStateMachine" id="cdk-concurrency-controller.DistributedSemaphore.property.cleanupSemaphoreStateMachine"></a>
+
+```typescript
+public readonly cleanupSemaphoreStateMachine: IStateMachine;
+```
+
+- *Type:* monocdk.aws_stepfunctions.IStateMachine
+
+---
+
+##### `releaseSemaphoreStateMachine`<sup>Required</sup> <a name="releaseSemaphoreStateMachine" id="cdk-concurrency-controller.DistributedSemaphore.property.releaseSemaphoreStateMachine"></a>
+
+```typescript
+public readonly releaseSemaphoreStateMachine: IStateMachine;
+```
+
+- *Type:* monocdk.aws_stepfunctions.IStateMachine
 
 ---
 
@@ -628,7 +661,7 @@ const acquireSemaphoreFragmentProps: AcquireSemaphoreFragmentProps = { ... }
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.waitTime">waitTime</a></code> | <code>monocdk.aws_stepfunctions.WaitTime</code> | The maximum wait duration for another try to acquire semaphore if not acquired in previous tries. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit">concurrencyLimit</a></code> | <code>number</code> | The value for concurrency control. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit">concurrencyLimit</a></code> | <code>string</code> | The value for concurrency control. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
 
 ---
@@ -690,10 +723,10 @@ The maximum wait duration for another try to acquire semaphore if not acquired i
 ##### `concurrencyLimit`<sup>Required</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit"></a>
 
 ```typescript
-public readonly concurrencyLimit: number;
+public readonly concurrencyLimit: string;
 ```
 
-- *Type:* number
+- *Type:* string
 
 The value for concurrency control.
 
@@ -1088,7 +1121,7 @@ const semaphoreDefinition: SemaphoreDefinition = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.concurrencyLimit">concurrencyLimit</a></code> | <code>number</code> | The value for concurrency control. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.concurrencyLimit">concurrencyLimit</a></code> | <code>string</code> | The value for concurrency control. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 
 ---
@@ -1096,10 +1129,10 @@ const semaphoreDefinition: SemaphoreDefinition = { ... }
 ##### `concurrencyLimit`<sup>Required</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.SemaphoreDefinition.property.concurrencyLimit"></a>
 
 ```typescript
-public readonly concurrencyLimit: number;
+public readonly concurrencyLimit: string;
 ```
 
-- *Type:* number
+- *Type:* string
 
 The value for concurrency control.
 

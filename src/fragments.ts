@@ -27,7 +27,7 @@ export interface SemaphoreDefinition extends SemaphoreName {
    * The value for concurrency control.
    */
   // TODO: make it optional? to allow some default value unless otherwise overridden here.
-  readonly concurrencyLimit: number;
+  readonly concurrencyLimit: string;
 }
 
 interface SemaphorePersistenceContext {
@@ -104,7 +104,7 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
       },
       expressionAttributeValues: {
         ':increase': DynamoAttributeValue.fromNumber(1),
-        ':limit': DynamoAttributeValue.fromNumber(concurrencyLimit),
+        ':limit': DynamoAttributeValue.numberFromString(concurrencyLimit), // this allow JsonPath expression to be used
         ':semaphoreUseAcquiredTime': DynamoAttributeValue.fromString(JsonPath.stringAt('$$.State.EnteredTime')),
       },
       updateExpression: 'SET #currentInUseCount = #currentInUseCount + :increase, #semaphoreUserId = :semaphoreUseAcquiredTime',

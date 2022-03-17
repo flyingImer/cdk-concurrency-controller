@@ -15,8 +15,8 @@ test('snapshot test', () => {
   const staticSemaphoreName = 'NotDefaultName';
   const ds = new DistributedSemaphore(stack, 'DistributedSemaphore', {
     semaphores: [
-      { name: dynamicSemaphoreName, concurrencyLimit: 6 },
-      { name: staticSemaphoreName, concurrencyLimit: 7 },
+      { name: dynamicSemaphoreName, concurrencyLimit: JsonPath.stringAt('$.concurrencyLimit') },
+      { name: staticSemaphoreName, concurrencyLimit: '7' },
     ],
   });
 
