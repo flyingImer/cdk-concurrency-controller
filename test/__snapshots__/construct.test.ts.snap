@@ -1,6 +1,236 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Semaphore snapshots snapshot tests: acquire 1`] = `
+exports[`Semaphore snapshots snapshot tests: acquire state machine definition 1`] = `
+Object {
+  "StartAt": "TryToAcquireSemaphore",
+  "States": Object {
+    "CheckIfFoundSemaphore": Object {
+      "Choices": Array [
+        Object {
+          "IsPresent": true,
+          "Next": "PrepareInput",
+          "Variable": "$.semaphoreInfo.currentSemaphoreUse.Item",
+        },
+      ],
+      "Comment": null,
+      "Default": "WaitToAcquireSemaphore",
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "Type": "Choice",
+    },
+    "CheckIfFoundSemaphoreUse": Object {
+      "Choices": Array [
+        Object {
+          "And": Array [
+            Object {
+              "IsPresent": true,
+              "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+            },
+            Object {
+              "StringMatches": "*Z*",
+              "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+            },
+          ],
+          "Next": "SemaphoreAcquisitionConfirmedContinue",
+        },
+      ],
+      "Comment": "This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.",
+      "Default": "WaitToAcquireSemaphore",
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "Type": "Choice",
+    },
+    "GetSemaphoreUse": Object {
+      "Catch": null,
+      "Comment": "Get info from DDB for the semaphore item.",
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "Next": "CheckIfFoundSemaphore",
+      "OutputPath": null,
+      "Parameters": Object {
+        "ConsistentRead": true,
+        "ExpressionAttributeNames": Object {
+          "#semaphoreUserId.$": "$.userId",
+        },
+        "Key": Object {
+          "SemaphoreName": Object {
+            "S.$": "$.name",
+          },
+        },
+        "ProjectionExpression": "#semaphoreUserId",
+        "TableName": "\${Token[NORMALIZED_ID]}",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:getItem",
+      "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+      "Retry": Array [
+        Object {
+          "BackoffRate": 2,
+          "ErrorEquals": Array [
+            "States.ALL",
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+        },
+      ],
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+    "InitializeSemaphore": Object {
+      "Catch": Array [
+        Object {
+          "ErrorEquals": Array [
+            "States.ALL",
+          ],
+          "Next": "TryToAcquireSemaphore",
+          "ResultPath": null,
+        },
+      ],
+      "Comment": "This state handles the case where an item hasn't been created for this semaphore yet. In that case, it will insert an initial item that includes the semaphore name as the key and CurrentInUseCount of 0. The Put to DynamoDB includes a conditional expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.",
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "Next": "TryToAcquireSemaphore",
+      "OutputPath": null,
+      "Parameters": Object {
+        "ConditionExpression": "SemaphoreName <> :semaphoreName",
+        "ExpressionAttributeValues": Object {
+          ":semaphoreName": Object {
+            "S.$": "$.name",
+          },
+        },
+        "Item": Object {
+          "CurrentInUseCount": Object {
+            "N": "0",
+          },
+          "SemaphoreName": Object {
+            "S.$": "$.name",
+          },
+        },
+        "TableName": "\${Token[NORMALIZED_ID]}",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:putItem",
+      "ResultPath": null,
+      "Retry": null,
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+    "PrepareInput": Object {
+      "Comment": null,
+      "InputPath": null,
+      "Next": "CheckIfFoundSemaphoreUse",
+      "OutputPath": null,
+      "Parameters": Object {
+        "Item.$": "$.semaphoreInfo.currentSemaphoreUse.Item",
+        "ItemString.$": "States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)",
+      },
+      "Result": null,
+      "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+      "Type": "Pass",
+    },
+    "SemaphoreAcquired": Object {
+      "Comment": null,
+      "End": true,
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "Result": null,
+      "ResultPath": null,
+      "Type": "Pass",
+    },
+    "SemaphoreAcquisitionConfirmedContinue": Object {
+      "Comment": "In this state, we have confirmed that semaphore is already held, so we pass the original execution input into the the function that does the work.",
+      "InputPath": null,
+      "Next": "SemaphoreAcquired",
+      "OutputPath": null,
+      "Parameters": null,
+      "Result": null,
+      "ResultPath": null,
+      "Type": "Pass",
+    },
+    "TryToAcquireSemaphore": Object {
+      "Catch": Array [
+        Object {
+          "ErrorEquals": Array [
+            "DynamoDB.AmazonDynamoDBException",
+          ],
+          "Next": "InitializeSemaphore",
+          "ResultPath": "$.semaphoreInfo.acquisitionError",
+        },
+        Object {
+          "ErrorEquals": Array [
+            "DynamoDB.ConditionalCheckFailedException",
+          ],
+          "Next": "GetSemaphoreUse",
+          "ResultPath": "$.semaphoreInfo.acquisitionError",
+        },
+      ],
+      "Comment": "Try to acquire a semaphore using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held semaphores and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the semaphore was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of semaphores have already been distributed or 2) if the current execution already owns a semaphore. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given semaphoreName has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.",
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "Next": "SemaphoreAcquired",
+      "OutputPath": null,
+      "Parameters": Object {
+        "ConditionExpression": "#currentInUseCount <> :limit and attribute_not_exists(#semaphoreUserId)",
+        "ExpressionAttributeNames": Object {
+          "#currentInUseCount": "CurrentInUseCount",
+          "#semaphoreUserId.$": "$.userId",
+        },
+        "ExpressionAttributeValues": Object {
+          ":increase": Object {
+            "N": "1",
+          },
+          ":limit": Object {
+            "N.$": "$.limit",
+          },
+          ":semaphoreUseAcquiredTime": Object {
+            "S.$": "$$.State.EnteredTime",
+          },
+        },
+        "Key": Object {
+          "SemaphoreName": Object {
+            "S.$": "$.name",
+          },
+        },
+        "ReturnValues": "UPDATED_NEW",
+        "TableName": "\${Token[NORMALIZED_ID]}",
+        "UpdateExpression": "SET #currentInUseCount = #currentInUseCount + :increase, #semaphoreUserId = :semaphoreUseAcquiredTime",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
+      "ResultPath": null,
+      "Retry": Array [
+        Object {
+          "BackoffRate": null,
+          "ErrorEquals": Array [
+            "DynamoDB.AmazonDynamoDBException",
+          ],
+          "IntervalSeconds": null,
+          "MaxAttempts": 0,
+        },
+        Object {
+          "BackoffRate": 2,
+          "ErrorEquals": Array [
+            "States.ALL",
+          ],
+          "IntervalSeconds": null,
+          "MaxAttempts": 6,
+        },
+      ],
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+    "WaitToAcquireSemaphore": Object {
+      "Comment": "If the semaphore indeed not been successfully Acquired, then wait for a bit before trying again.",
+      "Next": "TryToAcquireSemaphore",
+      "SecondsPath": "\${Token[NORMALIZED_ID]}",
+      "Type": "Wait",
+    },
+  },
+  "TimeoutSeconds": null,
+}
+`;
+
+exports[`Semaphore snapshots snapshot tests: acquire task 1`] = `
 Object {
   "StartAt": "AcquireSemaphoreViaStartExecution",
   "States": Object {
@@ -32,7 +262,279 @@ Object {
 }
 `;
 
-exports[`Semaphore snapshots snapshot tests: release 1`] = `
+exports[`Semaphore snapshots snapshot tests: cleanup state machine definition 1`] = `
+Object {
+  "StartAt": "ParseOriginalInputSnapshot",
+  "States": Object {
+    "CheckIfFoundSemaphore": Object {
+      "Choices": Array [
+        Object {
+          "IsPresent": true,
+          "Next": "PrepareInput",
+          "Variable": "$.semaphoreInfo.currentSemaphoreUse.Item",
+        },
+      ],
+      "Comment": null,
+      "Default": "SemaphoreUseNotFoundContinue",
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "Type": "Choice",
+    },
+    "CheckIfFoundSemaphoreUse": Object {
+      "Choices": Array [
+        Object {
+          "And": Array [
+            Object {
+              "IsPresent": true,
+              "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+            },
+            Object {
+              "StringMatches": "*Z*",
+              "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+            },
+          ],
+          "Next": "TryToReleaseSemaphore",
+        },
+      ],
+      "Comment": "This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.",
+      "Default": "SemaphoreUseNotFoundContinue",
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "Type": "Choice",
+    },
+    "GetSemaphoreUse": Object {
+      "Catch": null,
+      "Comment": "Get info from DDB for the semaphore item.",
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "Next": "CheckIfFoundSemaphore",
+      "OutputPath": null,
+      "Parameters": Object {
+        "ConsistentRead": true,
+        "ExpressionAttributeNames": Object {
+          "#semaphoreUserId.$": "$.userId",
+        },
+        "Key": Object {
+          "SemaphoreName": Object {
+            "S.$": "$.name",
+          },
+        },
+        "ProjectionExpression": "#semaphoreUserId",
+        "TableName": "\${Token[NORMALIZED_ID]}",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:getItem",
+      "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+      "Retry": Array [
+        Object {
+          "BackoffRate": 2,
+          "ErrorEquals": Array [
+            "States.ALL",
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+        },
+      ],
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+    "ParseOriginalInputSnapshot": Object {
+      "Comment": null,
+      "InputPath": null,
+      "Next": "GetSemaphoreUse",
+      "OutputPath": "$.OriginalInput",
+      "Parameters": Object {
+        "OriginalInput.$": "States.StringToJson($$.Execution.Input.detail.input)",
+      },
+      "Result": null,
+      "ResultPath": null,
+      "Type": "Pass",
+    },
+    "PrepareInput": Object {
+      "Comment": null,
+      "InputPath": null,
+      "Next": "CheckIfFoundSemaphoreUse",
+      "OutputPath": null,
+      "Parameters": Object {
+        "Item.$": "$.semaphoreInfo.currentSemaphoreUse.Item",
+        "ItemString.$": "States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)",
+      },
+      "Result": null,
+      "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+      "Type": "Pass",
+    },
+    "SemaphoreReleased": Object {
+      "Comment": null,
+      "End": true,
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "Result": null,
+      "ResultPath": null,
+      "Type": "Pass",
+    },
+    "SemaphoreUseNotFoundContinue": Object {
+      "Comment": null,
+      "InputPath": null,
+      "Next": "SemaphoreReleased",
+      "OutputPath": null,
+      "Parameters": null,
+      "Result": null,
+      "ResultPath": null,
+      "Type": "Pass",
+    },
+    "TryToReleaseSemaphore": Object {
+      "Catch": Array [
+        Object {
+          "ErrorEquals": Array [
+            "DynamoDB.ConditionalCheckFailedException",
+          ],
+          "Next": "SemaphoreUseNotFoundContinue",
+          "ResultPath": null,
+        },
+      ],
+      "Comment": "If this semaphoreUserId is still there, then clean it up and release the semaphore",
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "Next": "SemaphoreReleased",
+      "OutputPath": null,
+      "Parameters": Object {
+        "ConditionExpression": "attribute_exists(#semaphoreUserId)",
+        "ExpressionAttributeNames": Object {
+          "#currentInUseCount": "CurrentInUseCount",
+          "#semaphoreUserId.$": "$.userId",
+        },
+        "ExpressionAttributeValues": Object {
+          ":decrease": Object {
+            "N": "1",
+          },
+        },
+        "Key": Object {
+          "SemaphoreName": Object {
+            "S.$": "$.name",
+          },
+        },
+        "ReturnValues": "UPDATED_NEW",
+        "TableName": "\${Token[NORMALIZED_ID]}",
+        "UpdateExpression": "SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
+      "ResultPath": null,
+      "Retry": Array [
+        Object {
+          "BackoffRate": null,
+          "ErrorEquals": Array [
+            "DynamoDB.ConditionalCheckFailedException",
+          ],
+          "IntervalSeconds": null,
+          "MaxAttempts": 0,
+        },
+        Object {
+          "BackoffRate": 1.4,
+          "ErrorEquals": Array [
+            "States.ALL",
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 20,
+        },
+      ],
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+  },
+  "TimeoutSeconds": null,
+}
+`;
+
+exports[`Semaphore snapshots snapshot tests: release state machine definition 1`] = `
+Object {
+  "StartAt": "TryToReleaseSemaphore",
+  "States": Object {
+    "SemaphoreReleased": Object {
+      "Comment": null,
+      "End": true,
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "Result": null,
+      "ResultPath": null,
+      "Type": "Pass",
+    },
+    "SemaphoreUseNotFoundContinue": Object {
+      "Comment": null,
+      "InputPath": null,
+      "Next": "SemaphoreReleased",
+      "OutputPath": null,
+      "Parameters": null,
+      "Result": null,
+      "ResultPath": null,
+      "Type": "Pass",
+    },
+    "TryToReleaseSemaphore": Object {
+      "Catch": Array [
+        Object {
+          "ErrorEquals": Array [
+            "DynamoDB.ConditionalCheckFailedException",
+          ],
+          "Next": "SemaphoreUseNotFoundContinue",
+          "ResultPath": null,
+        },
+      ],
+      "Comment": "If this semaphoreUserId is still there, then clean it up and release the semaphore",
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "Next": "SemaphoreReleased",
+      "OutputPath": null,
+      "Parameters": Object {
+        "ConditionExpression": "attribute_exists(#semaphoreUserId)",
+        "ExpressionAttributeNames": Object {
+          "#currentInUseCount": "CurrentInUseCount",
+          "#semaphoreUserId.$": "$.userId",
+        },
+        "ExpressionAttributeValues": Object {
+          ":decrease": Object {
+            "N": "1",
+          },
+        },
+        "Key": Object {
+          "SemaphoreName": Object {
+            "S.$": "$.name",
+          },
+        },
+        "ReturnValues": "UPDATED_NEW",
+        "TableName": "\${Token[NORMALIZED_ID]}",
+        "UpdateExpression": "SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
+      "ResultPath": null,
+      "Retry": Array [
+        Object {
+          "BackoffRate": null,
+          "ErrorEquals": Array [
+            "DynamoDB.ConditionalCheckFailedException",
+          ],
+          "IntervalSeconds": null,
+          "MaxAttempts": 0,
+        },
+        Object {
+          "BackoffRate": 1.5,
+          "ErrorEquals": Array [
+            "States.ALL",
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 5,
+        },
+      ],
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+  },
+  "TimeoutSeconds": null,
+}
+`;
+
+exports[`Semaphore snapshots snapshot tests: release task 1`] = `
 Object {
   "StartAt": "ReleaseSemaphoreViaStartExecution",
   "States": Object {

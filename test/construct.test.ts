@@ -67,7 +67,40 @@ describe('Semaphore snapshots', () => {
     return JSON.parse(str.replace(/\${Token\[[A-Za-z0-9.]+\]}/g, '${Token[NORMALIZED_ID]}'));
   };
 
-  it('snapshot tests: acquire', () => {
+  it('snapshot tests: acquire state machine definition', () => {
+    // GIVEN
+    const ds = new DistributedSemaphore(stack, 'DistributedSemaphore');
+
+    // WHEN
+    const graph = new StateGraph(ds.__buildAcquireDefinition('Snapshot').startState, 'snapshot');
+
+    // THEN
+    expect(normalizeTokens(graph.toGraphJson())).toMatchSnapshot();
+  });
+
+  it('snapshot tests: release state machine definition', () => {
+    // GIVEN
+    const ds = new DistributedSemaphore(stack, 'DistributedSemaphore');
+
+    // WHEN
+    const graph = new StateGraph(ds.__buildReleaseDefinition('Snapshot').startState, 'snapshot');
+
+    // THEN
+    expect(normalizeTokens(graph.toGraphJson())).toMatchSnapshot();
+  });
+
+  it('snapshot tests: cleanup state machine definition', () => {
+    // GIVEN
+    const ds = new DistributedSemaphore(stack, 'DistributedSemaphore');
+
+    // WHEN
+    const graph = new StateGraph(ds.__buildCleanupDefinition('Snapshot').startState, 'snapshot');
+
+    // THEN
+    expect(normalizeTokens(graph.toGraphJson())).toMatchSnapshot();
+  });
+
+  it('snapshot tests: acquire task', () => {
     // GIVEN
     const ds = new DistributedSemaphore(stack, 'DistributedSemaphore');
 
@@ -78,7 +111,7 @@ describe('Semaphore snapshots', () => {
     expect(normalizeTokens(graph.toGraphJson())).toMatchSnapshot();
   });
 
-  it('snapshot tests: release', () => {
+  it('snapshot tests: release task', () => {
     // GIVEN
     const ds = new DistributedSemaphore(stack, 'DistributedSemaphore');
 

@@ -1,6 +1,6 @@
 import { Construct, Duration } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { INextable, IntegrationPattern, IStateMachine, JsonPath, LogOptions, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
+import { IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, LogOptions, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
 import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 import { Rule } from 'monocdk/lib/aws-events';
 import { SfnStateMachine } from 'monocdk/lib/aws-events-targets';
@@ -68,46 +68,17 @@ export class DistributedSemaphore extends Construct {
     };
 
     this.acquireStateMachine = new StateMachine(this, 'AcquireSemaphoreStateMachine', {
-      definition: new AcquireSemaphoreFragment(this, 'AcquireSemaphoreFragment', {
-        name: JsonPath.stringAt('$.name'),
-        limit: JsonPath.stringAt('$.limit'),
-        userId: JsonPath.stringAt('$.userId'),
-        nextTryWaitTime: JsonPath.stringAt('$.nextTryWaitTime'),
-        semaphoreTable: this.semaphoreTable,
-        retryStrategy: {
-          maxAttempts: 6,
-          backoffRate: 2,
-        },
-      }),
+      definition: this.__buildAcquireDefinition(),
       ...acquireSemaphoreStateMachineProps,
     });
 
     this.releaseStateMachine = new StateMachine(this, 'ReleaseSemaphoreStateMachine', {
-      definition: new ReleaseSemaphoreFragment(this, 'ReleaseSemaphoreFragment', {
-        name: JsonPath.stringAt('$.name'),
-        userId: JsonPath.stringAt('$.userId'),
-        semaphoreTable: this.semaphoreTable,
-      }),
+      definition: this.__buildReleaseDefinition(),
       ...releaseSemaphoreStateMachineProps,
     });
 
     this.cleanupStateMachine = new StateMachine(this, 'CleanupSemaphoreStateMachine', {
-      definition: new Pass(this, 'ParseOriginalInput', {
-        parameters: {
-          OriginalInput: JsonPath.stringToJson(JsonPath.stringAt('$$.Execution.Input.detail.input')),
-        },
-        outputPath: '$.OriginalInput',
-      }).next(new ReleaseSemaphoreFragment(this, 'CleanupSemaphoreFragment', {
-        name: JsonPath.stringAt('$.name'),
-        userId: JsonPath.stringAt('$.userId'),
-        semaphoreTable: this.semaphoreTable,
-        checkSemaphoreUseFirst: true,
-        retryStrategy: {
-          interval: Duration.seconds(5),
-          maxAttempts: 20,
-          backoffRate: 1.4,
-        },
-      })),
+      definition: this.__buildCleanupDefinition(),
       ...cleanupStateMachineProps,
     });
 
@@ -207,6 +178,61 @@ export class DistributedSemaphore extends Construct {
     if (!this.semaphoreMap.has(options.name)) {
       throw new Error(`Semaphore ${options.name} is not defined.`);
     }
+  }
+
+  /**
+   * @internal
+   * For unit test only
+   */
+  __buildAcquireDefinition(disambiguator = ''): IChainable {
+    return new AcquireSemaphoreFragment(this, `AcquireSemaphoreFragment${disambiguator}`, {
+      name: JsonPath.stringAt('$.name'),
+      limit: JsonPath.stringAt('$.limit'),
+      userId: JsonPath.stringAt('$.userId'),
+      nextTryWaitTime: JsonPath.stringAt('$.nextTryWaitTime'),
+      semaphoreTable: this.semaphoreTable,
+      retryStrategy: {
+        maxAttempts: 6,
+        backoffRate: 2,
+      },
+    });
+  }
+
+  /**
+   * @internal
+   * For unit test only
+   */
+  __buildReleaseDefinition(disambiguator = ''): IChainable {
+    return new ReleaseSemaphoreFragment(this, `ReleaseSemaphoreFragment${disambiguator}`, {
+      name: JsonPath.stringAt('$.name'),
+      userId: JsonPath.stringAt('$.userId'),
+      semaphoreTable: this.semaphoreTable,
+    });
+  }
+
+  /**
+   * @internal
+   * For unit test only
+   */
+  __buildCleanupDefinition(disambiguator = ''): IChainable {
+    return new Pass(this, `ParseOriginalInput${disambiguator}`, {
+      parameters: {
+        OriginalInput: JsonPath.stringToJson(JsonPath.stringAt('$$.Execution.Input.detail.input')),
+      },
+      outputPath: '$.OriginalInput',
+    }).next(
+      new ReleaseSemaphoreFragment(this, `CleanupSemaphoreFragment${disambiguator}`, {
+        name: JsonPath.stringAt('$.name'),
+        userId: JsonPath.stringAt('$.userId'),
+        semaphoreTable: this.semaphoreTable,
+        checkSemaphoreUseFirst: true,
+        retryStrategy: {
+          interval: Duration.seconds(5),
+          maxAttempts: 20,
+          backoffRate: 1.4,
+        },
+      }),
+    );
   }
 }
 
