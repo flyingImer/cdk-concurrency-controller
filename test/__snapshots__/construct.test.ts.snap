@@ -1,5 +1,67 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Semaphore snapshots snapshot tests: acquire 1`] = `
+Object {
+  "StartAt": "AcquireSemaphoreViaStartExecution",
+  "States": Object {
+    "AcquireSemaphoreViaStartExecution": Object {
+      "Catch": null,
+      "Comment": null,
+      "End": true,
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": Object {
+        "Input": Object {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "limit": "5",
+          "name": "DefaultSemaphore",
+          "nextTryWaitTime": "3",
+          "userId.$": "$$.Execution.Id",
+        },
+        "StateMachineArn": "\${Token[NORMALIZED_ID]}",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::states:startExecution.sync:2",
+      "ResultPath": null,
+      "Retry": null,
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+  },
+  "TimeoutSeconds": null,
+}
+`;
+
+exports[`Semaphore snapshots snapshot tests: release 1`] = `
+Object {
+  "StartAt": "ReleaseSemaphoreViaStartExecution",
+  "States": Object {
+    "ReleaseSemaphoreViaStartExecution": Object {
+      "Catch": null,
+      "Comment": null,
+      "End": true,
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "OutputPath": null,
+      "Parameters": Object {
+        "Input": Object {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "name": "DefaultSemaphore",
+          "userId.$": "$$.Execution.Id",
+        },
+        "StateMachineArn": "\${Token[NORMALIZED_ID]}",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::states:startExecution.sync:2",
+      "ResultPath": null,
+      "Retry": null,
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+  },
+  "TimeoutSeconds": null,
+}
+`;
+
 exports[`snapshot test 1`] = `
 Object {
   "Mappings": Object {

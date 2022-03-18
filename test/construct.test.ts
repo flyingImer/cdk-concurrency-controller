@@ -1,7 +1,7 @@
 import { App, Duration, RemovalPolicy, Stack } from 'monocdk';
 import { Match, Template } from 'monocdk/assertions';
 import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { JsonPath, LogLevel, Pass, StateMachine } from 'monocdk/aws-stepfunctions';
+import { JsonPath, LogLevel, Pass, StateGraph, StateMachine } from 'monocdk/aws-stepfunctions';
 import { SemaphoreDefinition } from '../src/fragments';
 import { DistributedSemaphore, SemaphoreStateMachineProps } from '../src/semaphore';
 
@@ -53,6 +53,41 @@ test('snapshot test', () => {
 
   // THEN
   expect(template.toJSON()).toMatchSnapshot();
+});
+
+describe('Semaphore snapshots', () => {
+  let stack: Stack;
+
+  beforeEach(() => {
+    stack = new Stack();
+  });
+
+  const normalizeTokens = (obj: object): object => {
+    const str = JSON.stringify(obj, (_, v) => v === undefined ? null : v); // this preserves undefined w/ null
+    return JSON.parse(str.replace(/\${Token\[[A-Za-z0-9.]+\]}/g, '${Token[NORMALIZED_ID]}'));
+  };
+
+  it('snapshot tests: acquire', () => {
+    // GIVEN
+    const ds = new DistributedSemaphore(stack, 'DistributedSemaphore');
+
+    // WHEN
+    const graph = new StateGraph(ds.acquire().startState, 'snapshot');
+
+    // THEN
+    expect(normalizeTokens(graph.toGraphJson())).toMatchSnapshot();
+  });
+
+  it('snapshot tests: release', () => {
+    // GIVEN
+    const ds = new DistributedSemaphore(stack, 'DistributedSemaphore');
+
+    // WHEN
+    const graph = new StateGraph(ds.release().startState, 'snapshot');
+
+    // THEN
+    expect(normalizeTokens(graph.toGraphJson())).toMatchSnapshot();
+  });
 });
 
 describe('Semaphore definition', () => {
