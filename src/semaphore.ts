@@ -1,10 +1,11 @@
 import { Construct, Duration } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { INextable, IntegrationPattern, isPositiveInteger, IStateMachine, JsonPath, LogOptions, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
+import { INextable, IntegrationPattern, IStateMachine, JsonPath, LogOptions, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
 import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 import { Rule } from 'monocdk/lib/aws-events';
 import { SfnStateMachine } from 'monocdk/lib/aws-events-targets';
 import { AcquireSemaphoreFragment, AcquireSemaphoreOptions, ReleaseSemaphoreFragment, ReleaseSemaphoreOptions, SemaphoreDefinition, SemaphoreTableDefinition, SemaphoreUseOptions } from './fragments';
+import { isDeterminedNonNegativeInteger } from './private/utils';
 
 export interface DistributedSemaphoreProps {
   /**
@@ -71,8 +72,8 @@ export class DistributedSemaphore extends Construct {
         name: JsonPath.stringAt('$.name'),
         concurrencyLimit: JsonPath.stringAt('$.concurrencyLimit'),
         userId: JsonPath.stringAt('$.userId'),
+        nextTryWaitTime: JsonPath.stringAt('$.nextTryWaitTime'),
         semaphoreTable: this.semaphoreTable,
-        // TODO: expose retry strategy
         retryStrategy: {
           maxAttempts: 6,
           backoffRate: 2,
@@ -133,13 +134,19 @@ export class DistributedSemaphore extends Construct {
   public acquire(options: AcquireOptions = { ...this.defaultSemaphoreUseOptions }): StateMachineFragment {
     this.validateSemaphoreUseOptions(options);
 
+    if (!!options.nextTryWaitTime
+      && !JsonPath.isEncodedJsonPath(options.nextTryWaitTime)
+      && !isDeterminedNonNegativeInteger(options.nextTryWaitTime)) {
+      throw new Error('Next retry wait time literal string must be a positive integer value.');
+    }
+
     return new AcquireViaStartExecutionFragment(this, `AcquireViaStartExecutionFragment${this.count++}`, {
       stateMachine: this.acquireStateMachine,
       input: {
         name: options.name,
         concurrencyLimit: this.semaphoreMap.get(options.name)!.concurrencyLimit,
         userId: options.userId,
-        // TODO: expose dynamic wait config to allow starvation mitigation
+        nextTryWaitTime: options.nextTryWaitTime || '3',
       },
     });
   }
@@ -190,7 +197,7 @@ export class DistributedSemaphore extends Construct {
       if (!concurrencyLimit || concurrencyLimit.length === 0) {
         throw new Error('Semaphore concurrency limit must be a non empty value.');
       }
-      if (!JsonPath.isEncodedJsonPath(concurrencyLimit) && !isPositiveInteger(new Number(concurrencyLimit).valueOf())) {
+      if (!JsonPath.isEncodedJsonPath(concurrencyLimit) && !isDeterminedNonNegativeInteger(concurrencyLimit)) {
         throw new Error('Semaphore concurrency limit literal string must be a positive integer value.');
       }
     });
@@ -203,9 +210,17 @@ export class DistributedSemaphore extends Construct {
   }
 }
 
+interface SemaphoreCommonOptions {
+  /**
+   * Timeout for this state machine task
+   *
+   * @default - None
+   */
+  readonly timeout?: Duration;
+}
 // TODO: make user id optional
-export interface AcquireOptions extends AcquireSemaphoreOptions { }
-export interface ReleaseOptions extends ReleaseSemaphoreOptions { }
+export interface AcquireOptions extends AcquireSemaphoreOptions, SemaphoreCommonOptions { }
+export interface ReleaseOptions extends ReleaseSemaphoreOptions, SemaphoreCommonOptions { }
 
 interface SemaphoreCommonInput {
   readonly name: string;
@@ -214,12 +229,19 @@ interface SemaphoreCommonInput {
 
 interface AcquireSemaphoreInput extends SemaphoreCommonInput {
   readonly concurrencyLimit: string;
+  readonly nextTryWaitTime: string;
 }
 
 interface ReleaseSemaphoreInput extends SemaphoreCommonInput { }
 
-interface AcquireViaStartExecutionFragmentProps {
+interface ViaStartExecutionFragmentCommonProps extends SemaphoreCommonOptions {
+  /**
+   * The Step Functions state machine to start the execution on.
+   */
   readonly stateMachine: IStateMachine;
+}
+
+interface AcquireViaStartExecutionFragmentProps extends ViaStartExecutionFragmentCommonProps {
   readonly input: AcquireSemaphoreInput;
 }
 
@@ -234,13 +256,13 @@ class AcquireViaStartExecutionFragment extends StateMachineFragment {
       integrationPattern: IntegrationPattern.RUN_JOB,
       associateWithParent: true,
       input: TaskInput.fromObject(props.input),
+      timeout: props.timeout,
     });
     this.endStates = this.startState.endStates;
   }
 }
 
-interface ReleaseViaStartExecutionFragmentProps {
-  readonly stateMachine: IStateMachine;
+interface ReleaseViaStartExecutionFragmentProps extends ViaStartExecutionFragmentCommonProps {
   readonly input: ReleaseSemaphoreInput;
 }
 
@@ -255,6 +277,7 @@ class ReleaseViaStartExecutionFragment extends StateMachineFragment {
       integrationPattern: IntegrationPattern.RUN_JOB,
       associateWithParent: true,
       input: TaskInput.fromObject(props.input),
+      timeout: props.timeout,
     });
     this.endStates = this.startState.endStates;
   }
@@ -262,7 +285,7 @@ class ReleaseViaStartExecutionFragment extends StateMachineFragment {
 
 export interface SemaphoreStateMachineProps {
   /**
-   * Maximum run time for this state machine
+   * Maximum run time for a state machine execution.
    *
    * @default No timeout
    */

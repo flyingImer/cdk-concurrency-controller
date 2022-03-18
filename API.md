@@ -595,8 +595,8 @@ const acquireOptions: AcquireOptions = { ... }
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
-| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
-| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.waitTime">waitTime</a></code> | <code>monocdk.aws_stepfunctions.WaitTime</code> | The maximum wait duration for another try to acquire semaphore if not acquired in previous tries. |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.nextTryWaitTime">nextTryWaitTime</a></code> | <code>string</code> | Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries. |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Timeout for this state machine task. |
 
 ---
 
@@ -626,31 +626,29 @@ The semaphore user id to acquire/release resource usage.
 
 ---
 
-##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.AcquireOptions.property.retryStrategy"></a>
+##### `nextTryWaitTime`<sup>Optional</sup> <a name="nextTryWaitTime" id="cdk-concurrency-controller.AcquireOptions.property.nextTryWaitTime"></a>
 
 ```typescript
-public readonly retryStrategy: RetryProps;
+public readonly nextTryWaitTime: string;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.RetryProps
-- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+- *Type:* string
+- *Default:* '3' seconds
 
-Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
-
-NOTE: `errors` property is always overridden to [Errors.ALL].
+Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries.
 
 ---
 
-##### `waitTime`<sup>Optional</sup> <a name="waitTime" id="cdk-concurrency-controller.AcquireOptions.property.waitTime"></a>
+##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.AcquireOptions.property.timeout"></a>
 
 ```typescript
-public readonly waitTime: WaitTime;
+public readonly timeout: Duration;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.WaitTime
-- *Default:* Duration.seconds(3)
+- *Type:* monocdk.Duration
+- *Default:* None
 
-The maximum wait duration for another try to acquire semaphore if not acquired in previous tries.
+Timeout for this state machine task.
 
 ---
 
@@ -670,10 +668,10 @@ const acquireSemaphoreFragmentProps: AcquireSemaphoreFragmentProps = { ... }
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.waitTime">waitTime</a></code> | <code>monocdk.aws_stepfunctions.WaitTime</code> | The maximum wait duration for another try to acquire semaphore if not acquired in previous tries. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.nextTryWaitTime">nextTryWaitTime</a></code> | <code>string</code> | Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit">concurrencyLimit</a></code> | <code>string</code> | The value for concurrency control. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 
 ---
 
@@ -703,31 +701,16 @@ The semaphore user id to acquire/release resource usage.
 
 ---
 
-##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy"></a>
+##### `nextTryWaitTime`<sup>Optional</sup> <a name="nextTryWaitTime" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.nextTryWaitTime"></a>
 
 ```typescript
-public readonly retryStrategy: RetryProps;
+public readonly nextTryWaitTime: string;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.RetryProps
-- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+- *Type:* string
+- *Default:* '3' seconds
 
-Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
-
-NOTE: `errors` property is always overridden to [Errors.ALL].
-
----
-
-##### `waitTime`<sup>Optional</sup> <a name="waitTime" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.waitTime"></a>
-
-```typescript
-public readonly waitTime: WaitTime;
-```
-
-- *Type:* monocdk.aws_stepfunctions.WaitTime
-- *Default:* Duration.seconds(3)
-
-The maximum wait duration for another try to acquire semaphore if not acquired in previous tries.
+Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries.
 
 ---
 
@@ -755,6 +738,21 @@ The DynamoDB table to use for the semaphore.
 
 ---
 
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
 ### AcquireSemaphoreOptions <a name="AcquireSemaphoreOptions" id="cdk-concurrency-controller.AcquireSemaphoreOptions"></a>
 
 #### Initializer <a name="Initializer" id="cdk-concurrency-controller.AcquireSemaphoreOptions.Initializer"></a>
@@ -771,8 +769,7 @@ const acquireSemaphoreOptions: AcquireSemaphoreOptions = { ... }
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.waitTime">waitTime</a></code> | <code>monocdk.aws_stepfunctions.WaitTime</code> | The maximum wait duration for another try to acquire semaphore if not acquired in previous tries. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreOptions.property.nextTryWaitTime">nextTryWaitTime</a></code> | <code>string</code> | Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries. |
 
 ---
 
@@ -802,31 +799,16 @@ The semaphore user id to acquire/release resource usage.
 
 ---
 
-##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.AcquireSemaphoreOptions.property.retryStrategy"></a>
+##### `nextTryWaitTime`<sup>Optional</sup> <a name="nextTryWaitTime" id="cdk-concurrency-controller.AcquireSemaphoreOptions.property.nextTryWaitTime"></a>
 
 ```typescript
-public readonly retryStrategy: RetryProps;
+public readonly nextTryWaitTime: string;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.RetryProps
-- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+- *Type:* string
+- *Default:* '3' seconds
 
-Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
-
-NOTE: `errors` property is always overridden to [Errors.ALL].
-
----
-
-##### `waitTime`<sup>Optional</sup> <a name="waitTime" id="cdk-concurrency-controller.AcquireSemaphoreOptions.property.waitTime"></a>
-
-```typescript
-public readonly waitTime: WaitTime;
-```
-
-- *Type:* monocdk.aws_stepfunctions.WaitTime
-- *Default:* Duration.seconds(3)
-
-The maximum wait duration for another try to acquire semaphore if not acquired in previous tries.
+Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries.
 
 ---
 
@@ -923,8 +905,8 @@ const releaseOptions: ReleaseOptions = { ... }
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
-| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
+| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Timeout for this state machine task. |
 
 ---
 
@@ -954,21 +936,6 @@ The semaphore user id to acquire/release resource usage.
 
 ---
 
-##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.ReleaseOptions.property.retryStrategy"></a>
-
-```typescript
-public readonly retryStrategy: RetryProps;
-```
-
-- *Type:* monocdk.aws_stepfunctions.RetryProps
-- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
-
-Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
-
-NOTE: `errors` property is always overridden to [Errors.ALL].
-
----
-
 ##### `checkSemaphoreUseFirst`<sup>Optional</sup> <a name="checkSemaphoreUseFirst" id="cdk-concurrency-controller.ReleaseOptions.property.checkSemaphoreUseFirst"></a>
 
 ```typescript
@@ -981,6 +948,19 @@ public readonly checkSemaphoreUseFirst: boolean;
 Check if the semaphore use exists before trying to release it.
 
 This can help to shift the load from write capacity to read capacity in case of missing semaphore use (best effort to avoid hot partitions and save write capacity for crucial actions), where DDB provides 3x throughput on read capacity than write capacity per partition. see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
+
+---
+
+##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.ReleaseOptions.property.timeout"></a>
+
+```typescript
+public readonly timeout: Duration;
+```
+
+- *Type:* monocdk.Duration
+- *Default:* None
+
+Timeout for this state machine task.
 
 ---
 
@@ -1000,9 +980,9 @@ const releaseSemaphoreFragmentProps: ReleaseSemaphoreFragmentProps = { ... }
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 
 ---
 
@@ -1029,21 +1009,6 @@ public readonly userId: string;
 - *Type:* string
 
 The semaphore user id to acquire/release resource usage.
-
----
-
-##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy"></a>
-
-```typescript
-public readonly retryStrategy: RetryProps;
-```
-
-- *Type:* monocdk.aws_stepfunctions.RetryProps
-- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
-
-Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
-
-NOTE: `errors` property is always overridden to [Errors.ALL].
 
 ---
 
@@ -1074,6 +1039,21 @@ The DynamoDB table to use for the semaphore.
 
 ---
 
+##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy"></a>
+
+```typescript
+public readonly retryStrategy: RetryProps;
+```
+
+- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
+
+Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
+
+NOTE: `errors` property is always overridden to [Errors.ALL].
+
+---
+
 ### ReleaseSemaphoreOptions <a name="ReleaseSemaphoreOptions" id="cdk-concurrency-controller.ReleaseSemaphoreOptions"></a>
 
 #### Initializer <a name="Initializer" id="cdk-concurrency-controller.ReleaseSemaphoreOptions.Initializer"></a>
@@ -1090,7 +1070,6 @@ const releaseSemaphoreOptions: ReleaseSemaphoreOptions = { ... }
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreOptions.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
 
 ---
@@ -1118,21 +1097,6 @@ public readonly userId: string;
 - *Type:* string
 
 The semaphore user id to acquire/release resource usage.
-
----
-
-##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.ReleaseSemaphoreOptions.property.retryStrategy"></a>
-
-```typescript
-public readonly retryStrategy: RetryProps;
-```
-
-- *Type:* monocdk.aws_stepfunctions.RetryProps
-- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
-
-Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
-
-NOTE: `errors` property is always overridden to [Errors.ALL].
 
 ---
 
@@ -1211,7 +1175,7 @@ const semaphoreStateMachineProps: SemaphoreStateMachineProps = { ... }
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.logs">logs</a></code> | <code>monocdk.aws_stepfunctions.LogOptions</code> | Defines what execution history events are logged and where they are logged. |
-| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for this state machine. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for a state machine execution. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.tracingEnabled">tracingEnabled</a></code> | <code>boolean</code> | Specifies whether Amazon X-Ray tracing is enabled for this state machine. |
 
 ---
@@ -1238,7 +1202,7 @@ public readonly timeout: Duration;
 - *Type:* monocdk.Duration
 - *Default:* No timeout
 
-Maximum run time for this state machine.
+Maximum run time for a state machine execution.
 
 ---
 
@@ -1323,7 +1287,6 @@ const semaphoreUseOptions: SemaphoreUseOptions = { ... }
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.SemaphoreUseOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreUseOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
-| <code><a href="#cdk-concurrency-controller.SemaphoreUseOptions.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 
 ---
 
@@ -1350,21 +1313,6 @@ public readonly userId: string;
 - *Type:* string
 
 The semaphore user id to acquire/release resource usage.
-
----
-
-##### `retryStrategy`<sup>Optional</sup> <a name="retryStrategy" id="cdk-concurrency-controller.SemaphoreUseOptions.property.retryStrategy"></a>
-
-```typescript
-public readonly retryStrategy: RetryProps;
-```
-
-- *Type:* monocdk.aws_stepfunctions.RetryProps
-- *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
-
-Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
-
-NOTE: `errors` property is always overridden to [Errors.ALL].
 
 ---
 

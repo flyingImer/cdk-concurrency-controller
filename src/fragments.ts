@@ -2,6 +2,7 @@ import { Construct, Duration } from 'monocdk';
 import { Attribute, AttributeType, ITable } from 'monocdk/aws-dynamodb';
 import { Choice, Condition, Errors, IChainable, INextable, JsonPath, Pass, RetryProps, State, StateMachineFragment, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
 import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem } from 'monocdk/aws-stepfunctions-tasks';
+import { isDeterminedNonNegativeInteger } from './private/utils';
 
 export interface SemaphoreTableDefinition {
   readonly table: ITable;
@@ -55,18 +56,19 @@ interface SemaphoreActionRetryOptions {
   readonly retryStrategy?: RetryProps;
 }
 
-export interface SemaphoreUseOptions extends SemaphoreUseDefinition, SemaphoreActionRetryOptions { }
+export interface SemaphoreUseOptions extends SemaphoreUseDefinition { }
 
 export interface AcquireSemaphoreOptions extends SemaphoreUseOptions {
   /**
-   * The maximum wait duration for another try to acquire semaphore if not acquired in previous tries.
+   * Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries.
    *
-   * @default Duration.seconds(3)
+   * @default '3' seconds
    */
-  readonly waitTime?: WaitTime;
+  readonly nextTryWaitTime?: string;
 }
 
-export interface AcquireSemaphoreFragmentProps extends AcquireSemaphoreOptions, SemaphoreDefinition, SemaphorePersistenceContext { }
+// eslint-disable-next-line max-len
+export interface AcquireSemaphoreFragmentProps extends AcquireSemaphoreOptions, SemaphoreDefinition, SemaphorePersistenceContext, SemaphoreActionRetryOptions { }
 
 export class AcquireSemaphoreFragment extends StateMachineFragment {
   public readonly startState: State;
@@ -80,7 +82,7 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
       name: semaphoreName,
       userId: semaphoreUserId,
       concurrencyLimit,
-      waitTime = WaitTime.duration(Duration.seconds(3)),
+      nextTryWaitTime = Duration.seconds(3).toSeconds().toString(),
       retryStrategy = {
         interval: Duration.seconds(1),
         maxAttempts: 5,
@@ -90,6 +92,9 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
 
     if (semaphoreTable.partitionKey.type !== AttributeType.STRING) {
       throw new Error('Partition key must be a string');
+    }
+    if (!JsonPath.isEncodedJsonPath(nextTryWaitTime) && !isDeterminedNonNegativeInteger(nextTryWaitTime)) {
+      throw new Error('Next retry wait time literal string must be a positive integer value.');
     }
 
     const tryToAcquire = new DynamoUpdateItem(this, 'TryToAcquireSemaphore', {
@@ -133,7 +138,9 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
     });
     const waitToAcquire = new Wait(this, 'WaitToAcquireSemaphore', {
       comment: 'If the semaphore indeed not been successfully Acquired, then wait for a bit before trying again.',
-      time: waitTime,
+      time: JsonPath.isEncodedJsonPath(nextTryWaitTime)
+        ? WaitTime.secondsPath(nextTryWaitTime)
+        : WaitTime.duration(Duration.seconds(parseInt(nextTryWaitTime))),
     });
 
     const acquired = new Pass(this, 'SemaphoreAcquired', {
@@ -190,7 +197,7 @@ export interface ReleaseSemaphoreOptions extends SemaphoreUseOptions {
   readonly checkSemaphoreUseFirst?: boolean;
 }
 
-export interface ReleaseSemaphoreFragmentProps extends ReleaseSemaphoreOptions, SemaphorePersistenceContext { }
+export interface ReleaseSemaphoreFragmentProps extends ReleaseSemaphoreOptions, SemaphorePersistenceContext, SemaphoreActionRetryOptions { }
 
 export class ReleaseSemaphoreFragment extends StateMachineFragment {
   public readonly startState: State;
