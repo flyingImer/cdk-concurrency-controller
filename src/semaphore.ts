@@ -21,6 +21,7 @@ export interface DistributedSemaphoreProps {
 
   readonly acquireSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
   readonly releaseSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
+  // TODO: clarify this does not clean up semaphore use for parent state machine failures
   readonly cleanupSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
 }
 
