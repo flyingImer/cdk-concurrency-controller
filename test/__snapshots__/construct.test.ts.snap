@@ -115,7 +115,7 @@ Object {
               Object {
                 "Ref": "DistributedSemaphoreSemaphoreTableE8DED22E",
               },
-              "\\",\\"ConditionExpression\\":\\"#currentInUseCount <> :limit and attribute_not_exists(#semaphoreUserId)\\",\\"ExpressionAttributeNames\\":{\\"#currentInUseCount\\":\\"CurrentInUseCount\\",\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N.$\\":\\"$.concurrencyLimit\\"},\\":semaphoreUseAcquiredTime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentInUseCount = #currentInUseCount + :increase, #semaphoreUserId = :semaphoreUseAcquiredTime\\"}},\\"InitializeSemaphore\\":{\\"Next\\":\\"TryToAcquireSemaphore\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"ResultPath\\":null,\\"Next\\":\\"TryToAcquireSemaphore\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this semaphore yet. In that case, it will insert an initial item that includes the semaphore name as the key and CurrentInUseCount of 0. The Put to DynamoDB includes a conditional expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              "\\",\\"ConditionExpression\\":\\"#currentInUseCount <> :limit and attribute_not_exists(#semaphoreUserId)\\",\\"ExpressionAttributeNames\\":{\\"#currentInUseCount\\":\\"CurrentInUseCount\\",\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N.$\\":\\"$.limit\\"},\\":semaphoreUseAcquiredTime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentInUseCount = #currentInUseCount + :increase, #semaphoreUserId = :semaphoreUseAcquiredTime\\"}},\\"InitializeSemaphore\\":{\\"Next\\":\\"TryToAcquireSemaphore\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"ResultPath\\":null,\\"Next\\":\\"TryToAcquireSemaphore\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this semaphore yet. In that case, it will insert an initial item that includes the semaphore name as the key and CurrentInUseCount of 0. The Put to DynamoDB includes a conditional expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
@@ -616,7 +616,7 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"DefaultSemaphore\\",\\"concurrencyLimit\\":\\"5\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"DefaultSemaphore\\",\\"limit\\":\\"5\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreAcquireSemaphoreStateMachine11CA7A20",
               },
@@ -632,7 +632,7 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"concurrencyLimit.$\\":\\"$.concurrencyLimit\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"limit.$\\":\\"$.limit\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreAcquireSemaphoreStateMachine11CA7A20",
               },
@@ -648,7 +648,7 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"NotDefaultName\\",\\"concurrencyLimit\\":\\"7\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"NotDefaultName\\",\\"limit\\":\\"7\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreAcquireSemaphoreStateMachine11CA7A20",
               },
@@ -664,7 +664,7 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"concurrencyLimit.$\\":\\"$.concurrencyLimit\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"limit.$\\":\\"$.limit\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
               Object {
                 "Ref": "DistributedSemaphoreAcquireSemaphoreStateMachine11CA7A20",
               },

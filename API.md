@@ -669,7 +669,7 @@ const acquireSemaphoreFragmentProps: AcquireSemaphoreFragmentProps = { ... }
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.nextTryWaitTime">nextTryWaitTime</a></code> | <code>string</code> | Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit">concurrencyLimit</a></code> | <code>string</code> | The value for concurrency control. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.limit">limit</a></code> | <code>string</code> | The value for concurrency control. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 
@@ -714,10 +714,10 @@ Wait a fixed amount of time (in second) for another try to acquire semaphore if 
 
 ---
 
-##### `concurrencyLimit`<sup>Required</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.concurrencyLimit"></a>
+##### `limit`<sup>Required</sup> <a name="limit" id="cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.limit"></a>
 
 ```typescript
-public readonly concurrencyLimit: string;
+public readonly limit: string;
 ```
 
 - *Type:* string
@@ -861,7 +861,7 @@ public readonly defaultSemaphore: SemaphoreDefinition;
 ```
 
 - *Type:* <a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>
-- *Default:* '{ name: "DefaultSemaphore", concurrencyLimit: '5' }'
+- *Default:* '{ name: "DefaultSemaphore", limit: "5" }'
 
 The default semaphore settings.
 
@@ -1129,15 +1129,15 @@ const semaphoreDefinition: SemaphoreDefinition = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.concurrencyLimit">concurrencyLimit</a></code> | <code>string</code> | The value for concurrency control. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.limit">limit</a></code> | <code>string</code> | The value for concurrency control. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 
 ---
 
-##### `concurrencyLimit`<sup>Required</sup> <a name="concurrencyLimit" id="cdk-concurrency-controller.SemaphoreDefinition.property.concurrencyLimit"></a>
+##### `limit`<sup>Required</sup> <a name="limit" id="cdk-concurrency-controller.SemaphoreDefinition.property.limit"></a>
 
 ```typescript
-public readonly concurrencyLimit: string;
+public readonly limit: string;
 ```
 
 - *Type:* string

@@ -14,7 +14,7 @@ export interface DistributedSemaphoreProps {
    *
    * NOTE: the default semaphore name cannot use JsonPath expression for the sake of a safe fallback.
    *
-   * @default '{ name: "DefaultSemaphore", concurrencyLimit: '5' }'
+   * @default '{ name: "DefaultSemaphore", limit: "5" }'
    */
   readonly defaultSemaphore?: SemaphoreDefinition;
 
@@ -40,7 +40,7 @@ export class DistributedSemaphore extends Construct {
   constructor(scope: Construct, id: string, props: DistributedSemaphoreProps = {}) {
     super(scope, id);
 
-    const { defaultSemaphore = { name: 'DefaultSemaphore', concurrencyLimit: '5' }, semaphores, acquireSemaphoreStateMachineProps, releaseSemaphoreStateMachineProps, cleanupSemaphoreStateMachineProps: cleanupStateMachineProps } = props;
+    const { defaultSemaphore = { name: 'DefaultSemaphore', limit: '5' }, semaphores, acquireSemaphoreStateMachineProps, releaseSemaphoreStateMachineProps, cleanupSemaphoreStateMachineProps: cleanupStateMachineProps } = props;
     this.defaultSemaphoreName = defaultSemaphore.name;
     this.defaultSemaphoreUseOptions = { name: this.defaultSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }; // TODO: how to communicate default userId?
 
@@ -70,7 +70,7 @@ export class DistributedSemaphore extends Construct {
     this.acquireStateMachine = new StateMachine(this, 'AcquireSemaphoreStateMachine', {
       definition: new AcquireSemaphoreFragment(this, 'AcquireSemaphoreFragment', {
         name: JsonPath.stringAt('$.name'),
-        concurrencyLimit: JsonPath.stringAt('$.concurrencyLimit'),
+        limit: JsonPath.stringAt('$.limit'),
         userId: JsonPath.stringAt('$.userId'),
         nextTryWaitTime: JsonPath.stringAt('$.nextTryWaitTime'),
         semaphoreTable: this.semaphoreTable,
@@ -144,7 +144,7 @@ export class DistributedSemaphore extends Construct {
       stateMachine: this.acquireStateMachine,
       input: {
         name: options.name,
-        concurrencyLimit: this.semaphoreMap.get(options.name)!.concurrencyLimit,
+        limit: this.semaphoreMap.get(options.name)!.limit,
         userId: options.userId,
         nextTryWaitTime: options.nextTryWaitTime || '3',
       },
@@ -190,14 +190,14 @@ export class DistributedSemaphore extends Construct {
 
   private validateSemaphoreDefinition(): void {
     this.semaphoreMap.forEach((definition) => {
-      const { name, concurrencyLimit } = definition;
+      const { name, limit } = definition;
       if (!name || name.length === 0) {
         throw new Error('Semaphore name must be a non empty value.');
       }
-      if (!concurrencyLimit || concurrencyLimit.length === 0) {
+      if (!limit || limit.length === 0) {
         throw new Error('Semaphore concurrency limit must be a non empty value.');
       }
-      if (!JsonPath.isEncodedJsonPath(concurrencyLimit) && !isDeterminedNonNegativeInteger(concurrencyLimit)) {
+      if (!JsonPath.isEncodedJsonPath(limit) && !isDeterminedNonNegativeInteger(limit)) {
         throw new Error('Semaphore concurrency limit literal string must be a positive integer value.');
       }
     });
@@ -228,7 +228,7 @@ interface SemaphoreCommonInput {
 }
 
 interface AcquireSemaphoreInput extends SemaphoreCommonInput {
-  readonly concurrencyLimit: string;
+  readonly limit: string;
   readonly nextTryWaitTime: string;
 }
 

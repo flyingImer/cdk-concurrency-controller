@@ -38,10 +38,10 @@ class TestStack extends Stack {
     const dsn = new DS(this, 'DistributedSemaphore', {
       defaultSemaphore: {
         name: 'DefaultSemaphore',
-        concurrencyLimit: '2',
+        limit: '2',
       },
       semaphores: [
-        { name: aSemaphoreName, concurrencyLimit: '5' },
+        { name: aSemaphoreName, limit: '5' },
       ],
       acquireSemaphoreStateMachineProps: {
         timeout: Duration.days(1),

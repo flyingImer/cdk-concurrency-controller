@@ -17,8 +17,8 @@ test('snapshot test', () => {
   const staticSemaphoreName = 'NotDefaultName';
   const ds = new DistributedSemaphore(stack, 'DistributedSemaphore', {
     semaphores: [
-      { name: dynamicSemaphoreName, concurrencyLimit: JsonPath.stringAt('$.concurrencyLimit') },
-      { name: staticSemaphoreName, concurrencyLimit: '7' },
+      { name: dynamicSemaphoreName, limit: JsonPath.stringAt('$.limit') },
+      { name: staticSemaphoreName, limit: '7' },
     ],
   });
 
@@ -67,11 +67,11 @@ describe('Semaphore definition', () => {
     const customSemaphores: SemaphoreDefinition[] = [
       {
         name: 'semaphore1',
-        concurrencyLimit: '1',
+        limit: '1',
       },
       {
         name: JsonPath.stringAt('$.semaphore2Name'),
-        concurrencyLimit: JsonPath.stringAt('$.semaphore2Limit'),
+        limit: JsonPath.stringAt('$.semaphore2Limit'),
       },
     ];
 
@@ -93,7 +93,7 @@ describe('Semaphore definition', () => {
     const customSemaphores: SemaphoreDefinition[] = [
       {
         name: 'semaphore1',
-        concurrencyLimit: '0',
+        limit: '0',
       },
     ];
 
@@ -115,7 +115,7 @@ describe('Semaphore definition', () => {
     const customSemaphores: SemaphoreDefinition[] = [
       {
         name: '',
-        concurrencyLimit: '1',
+        limit: '1',
       },
     ];
 
@@ -130,7 +130,7 @@ describe('Semaphore definition', () => {
     const customSemaphores: SemaphoreDefinition[] = [
       {
         name: 'semaphore1',
-        concurrencyLimit: '',
+        limit: '',
       },
     ];
 
@@ -145,7 +145,7 @@ describe('Semaphore definition', () => {
     const customSemaphores: SemaphoreDefinition[] = [
       {
         name: 'semaphore1',
-        concurrencyLimit: '-1',
+        limit: '-1',
       },
     ];
 
@@ -160,7 +160,7 @@ describe('Semaphore definition', () => {
     const customSemaphores: SemaphoreDefinition[] = [
       {
         name: 'semaphore1',
-        concurrencyLimit: '1.1',
+        limit: '1.1',
       },
     ];
 
@@ -175,7 +175,7 @@ describe('Semaphore definition', () => {
     const customSemaphores: SemaphoreDefinition[] = [
       {
         name: 'semaphore1',
-        concurrencyLimit: 'not-a-number',
+        limit: 'not-a-number',
       },
     ];
 
