@@ -1,10 +1,9 @@
 import { Construct, Duration } from 'monocdk';
 import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, LogOptions, Pass, State, StateMachine, StateMachineFragment, TaskInput } from 'monocdk/aws-stepfunctions';
-import { StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
+import { IChainable, IStateMachine, JsonPath, LogOptions, Pass, StateMachine, StateMachineFragment } from 'monocdk/aws-stepfunctions';
 import { Rule } from 'monocdk/lib/aws-events';
 import { SfnStateMachine } from 'monocdk/lib/aws-events-targets';
-import { AcquireSemaphoreFragment, AcquireSemaphoreOptions, ReleaseSemaphoreFragment, ReleaseSemaphoreOptions, SemaphoreDefinition, SemaphoreTableDefinition, SemaphoreUseOptions } from './fragments';
+import { AcquireSemaphoreFragment, AcquireSemaphoreOptions, AcquireViaStartExecutionFragment, ReleaseSemaphoreFragment, ReleaseSemaphoreOptions, ReleaseViaStartExecutionFragment, SemaphoreDefinition, SemaphoreTableDefinition, SemaphoreTimeoutOptions, SemaphoreUseDefinition } from './fragments';
 import { isDeterminedNonNegativeInteger } from './private/utils';
 
 export interface DistributedSemaphoreProps {
@@ -30,7 +29,7 @@ export class DistributedSemaphore extends Construct {
 
   private readonly defaultSemaphoreName: string;
   private readonly semaphoreMap = new Map<string, SemaphoreDefinition>();
-  private readonly defaultSemaphoreUseOptions: SemaphoreUseOptions;
+  private readonly defaultSemaphoreUseDefinition: SemaphoreUseDefinition;
   private readonly acquireStateMachine: StateMachine;
   private readonly releaseStateMachine: StateMachine;
   private readonly cleanupStateMachine: StateMachine;
@@ -42,7 +41,7 @@ export class DistributedSemaphore extends Construct {
 
     const { defaultSemaphore = { name: 'DefaultSemaphore', limit: '5' }, semaphores, acquireSemaphoreStateMachineProps, releaseSemaphoreStateMachineProps, cleanupSemaphoreStateMachineProps: cleanupStateMachineProps } = props;
     this.defaultSemaphoreName = defaultSemaphore.name;
-    this.defaultSemaphoreUseOptions = { name: this.defaultSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }; // TODO: how to communicate default userId?
+    this.defaultSemaphoreUseDefinition = { name: this.defaultSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }; // TODO: how to communicate default userId?
 
     this.semaphoreMap.set(this.defaultSemaphoreName, defaultSemaphore);
     !!semaphores && semaphores.forEach((semaphore) => {
@@ -102,8 +101,8 @@ export class DistributedSemaphore extends Construct {
    *
    * @param options use default semaphore if not specified
    */
-  public acquire(options: AcquireOptions = { ...this.defaultSemaphoreUseOptions }): StateMachineFragment {
-    this.validateSemaphoreUseOptions(options);
+  public acquire(options: AcquireOptions = { ...this.defaultSemaphoreUseDefinition }): StateMachineFragment {
+    this.validateSemaphoreUseDefinition(options);
 
     if (!!options.nextTryWaitTime
       && !JsonPath.isEncodedJsonPath(options.nextTryWaitTime)
@@ -127,8 +126,8 @@ export class DistributedSemaphore extends Construct {
    *
    * @param options use default semaphore if not specified
    */
-  public release(options: ReleaseOptions = { ...this.defaultSemaphoreUseOptions }): StateMachineFragment {
-    this.validateSemaphoreUseOptions(options);
+  public release(options: ReleaseOptions = { ...this.defaultSemaphoreUseDefinition }): StateMachineFragment {
+    this.validateSemaphoreUseDefinition(options);
 
     return new ReleaseViaStartExecutionFragment(this, `ReleaseViaStartExecutionFragment${this.count++}`, {
       stateMachine: this.releaseStateMachine,
@@ -174,7 +173,7 @@ export class DistributedSemaphore extends Construct {
     });
   }
 
-  private validateSemaphoreUseOptions(options: SemaphoreUseOptions): void {
+  private validateSemaphoreUseDefinition(options: SemaphoreUseDefinition): void {
     if (!this.semaphoreMap.has(options.name)) {
       throw new Error(`Semaphore ${options.name} is not defined.`);
     }
@@ -236,86 +235,11 @@ export class DistributedSemaphore extends Construct {
   }
 }
 
-interface SemaphoreCommonOptions {
-  /**
-   * Timeout for this state machine task
-   *
-   * @default - None
-   */
-  readonly timeout?: Duration;
-}
 // TODO: make user id optional
-export interface AcquireOptions extends AcquireSemaphoreOptions, SemaphoreCommonOptions { }
-export interface ReleaseOptions extends ReleaseSemaphoreOptions, SemaphoreCommonOptions { }
+export interface AcquireOptions extends AcquireSemaphoreOptions, SemaphoreTimeoutOptions { }
+export interface ReleaseOptions extends ReleaseSemaphoreOptions, SemaphoreTimeoutOptions { }
 
-interface SemaphoreCommonInput {
-  readonly name: string;
-  readonly userId: string;
-}
-
-interface AcquireSemaphoreInput extends SemaphoreCommonInput {
-  readonly limit: string;
-  readonly nextTryWaitTime: string;
-}
-
-interface ReleaseSemaphoreInput extends SemaphoreCommonInput { }
-
-interface ViaStartExecutionFragmentCommonProps extends SemaphoreCommonOptions {
-  /**
-   * The Step Functions state machine to start the execution on.
-   */
-  readonly stateMachine: IStateMachine;
-}
-
-interface AcquireViaStartExecutionFragmentProps extends ViaStartExecutionFragmentCommonProps {
-  readonly input: AcquireSemaphoreInput;
-}
-
-class AcquireViaStartExecutionFragment extends StateMachineFragment {
-  public readonly startState: State;
-  public readonly endStates: INextable[];
-
-  constructor(scope: Construct, id: string, props: AcquireViaStartExecutionFragmentProps) {
-    super(scope, id);
-    this.startState = new StepFunctionsStartExecution(this, 'AcquireSemaphoreViaStartExecution', {
-      stateMachine: props.stateMachine,
-      integrationPattern: IntegrationPattern.RUN_JOB,
-      associateWithParent: true,
-      input: TaskInput.fromObject(props.input),
-      timeout: props.timeout,
-    });
-    this.endStates = this.startState.endStates;
-  }
-}
-
-interface ReleaseViaStartExecutionFragmentProps extends ViaStartExecutionFragmentCommonProps {
-  readonly input: ReleaseSemaphoreInput;
-}
-
-class ReleaseViaStartExecutionFragment extends StateMachineFragment {
-  public readonly startState: State;
-  public readonly endStates: INextable[];
-
-  constructor(scope: Construct, id: string, props: ReleaseViaStartExecutionFragmentProps) {
-    super(scope, id);
-    this.startState = new StepFunctionsStartExecution(this, 'ReleaseSemaphoreViaStartExecution', {
-      stateMachine: props.stateMachine,
-      integrationPattern: IntegrationPattern.RUN_JOB,
-      associateWithParent: true,
-      input: TaskInput.fromObject(props.input),
-      timeout: props.timeout,
-    });
-    this.endStates = this.startState.endStates;
-  }
-}
-
-export interface SemaphoreStateMachineProps {
-  /**
-   * Maximum run time for a state machine execution.
-   *
-   * @default No timeout
-   */
-  readonly timeout?: Duration;
+export interface SemaphoreStateMachineProps extends SemaphoreTimeoutOptions {
   /**
    * Defines what execution history events are logged and where they are logged.
    *

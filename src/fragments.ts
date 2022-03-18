@@ -1,7 +1,7 @@
 import { Construct, Duration } from 'monocdk';
 import { Attribute, AttributeType, ITable } from 'monocdk/aws-dynamodb';
-import { Choice, Condition, Errors, IChainable, INextable, JsonPath, Pass, RetryProps, State, StateMachineFragment, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
-import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem } from 'monocdk/aws-stepfunctions-tasks';
+import { Choice, Condition, Errors, IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, Pass, RetryProps, State, StateMachineFragment, TaskInput, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
+import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
 import { isDeterminedNonNegativeInteger } from './private/utils';
 
 export interface SemaphoreTableDefinition {
@@ -38,7 +38,7 @@ interface SemaphorePersistenceContext {
   readonly semaphoreTable: SemaphoreTableDefinition;
 }
 
-interface SemaphoreUseDefinition extends SemaphoreName {
+export interface SemaphoreUseDefinition extends SemaphoreName {
   /**
    * The semaphore user id to acquire/release resource usage.
    */
@@ -56,9 +56,7 @@ interface SemaphoreActionRetryOptions {
   readonly retryStrategy?: RetryProps;
 }
 
-export interface SemaphoreUseOptions extends SemaphoreUseDefinition { }
-
-export interface AcquireSemaphoreOptions extends SemaphoreUseOptions {
+export interface AcquireSemaphoreOptions extends SemaphoreUseDefinition {
   /**
    * Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries.
    *
@@ -185,7 +183,7 @@ export class AcquireSemaphoreFragment extends StateMachineFragment {
   }
 }
 
-export interface ReleaseSemaphoreOptions extends SemaphoreUseOptions {
+export interface ReleaseSemaphoreOptions extends SemaphoreUseDefinition {
   /**
    * Check if the semaphore use exists before trying to release it.
    * This can help to shift the load from write capacity to read capacity in case of missing semaphore use
@@ -377,5 +375,75 @@ class CheckIfSemaphoreUsedByUserFragment extends StateMachineFragment {
         notFoundAction,
       ),
     ).endStates;
+  }
+}
+
+export interface SemaphoreTimeoutOptions {
+  /**
+   * Maximum run time for the execution.
+   *
+   * @default No timeout
+   */
+  readonly timeout?: Duration;
+}
+
+interface SemaphoreTaskCommonInput {
+  readonly name: string;
+  readonly userId: string;
+}
+
+export interface AcquireSemaphoreTaskInput extends SemaphoreTaskCommonInput {
+  readonly limit: string;
+  readonly nextTryWaitTime: string;
+}
+
+export interface ReleaseSemaphoreTaskInput extends SemaphoreTaskCommonInput { }
+
+interface ViaStartExecutionFragmentCommonProps extends SemaphoreTimeoutOptions {
+  /**
+   * The Step Functions state machine to start the execution on.
+   */
+  readonly stateMachine: IStateMachine;
+}
+
+export interface AcquireViaStartExecutionFragmentProps extends ViaStartExecutionFragmentCommonProps {
+  readonly input: AcquireSemaphoreTaskInput;
+}
+
+export class AcquireViaStartExecutionFragment extends StateMachineFragment {
+  public readonly startState: State;
+  public readonly endStates: INextable[];
+
+  constructor(scope: Construct, id: string, props: AcquireViaStartExecutionFragmentProps) {
+    super(scope, id);
+    this.startState = new StepFunctionsStartExecution(this, 'AcquireSemaphoreViaStartExecution', {
+      stateMachine: props.stateMachine,
+      integrationPattern: IntegrationPattern.RUN_JOB,
+      associateWithParent: true,
+      input: TaskInput.fromObject(props.input),
+      timeout: props.timeout,
+    });
+    this.endStates = this.startState.endStates;
+  }
+}
+
+export interface ReleaseViaStartExecutionFragmentProps extends ViaStartExecutionFragmentCommonProps {
+  readonly input: ReleaseSemaphoreTaskInput;
+}
+
+export class ReleaseViaStartExecutionFragment extends StateMachineFragment {
+  public readonly startState: State;
+  public readonly endStates: INextable[];
+
+  constructor(scope: Construct, id: string, props: ReleaseViaStartExecutionFragmentProps) {
+    super(scope, id);
+    this.startState = new StepFunctionsStartExecution(this, 'ReleaseSemaphoreViaStartExecution', {
+      stateMachine: props.stateMachine,
+      integrationPattern: IntegrationPattern.RUN_JOB,
+      associateWithParent: true,
+      input: TaskInput.fromObject(props.input),
+      timeout: props.timeout,
+    });
+    this.endStates = this.startState.endStates;
   }
 }
