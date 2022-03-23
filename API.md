@@ -79,7 +79,8 @@ public prefixStates(prefix?: string): StateMachineFragment
 
 Prefix the IDs of all states in this state machine fragment.
 
-Use this to avoid multiple copies of the state machine all having the same state IDs.
+Use this to avoid multiple copies of the state machine all having the
+same state IDs.
 
 ###### `prefix`<sup>Optional</sup> <a name="prefix" id="cdk-concurrency-controller.AcquireSemaphoreFragment.prefixStates.parameter.prefix"></a>
 
@@ -99,7 +100,13 @@ public toSingleState(options?: SingleStateOptions): Parallel
 
 Wrap all states in this state machine fragment up into a single state.
 
-This can be used to add retry or error handling onto this state machine fragment.  Be aware that this changes the result of the inner state machine to be an array with the result of the state machine in it. Adjust your paths accordingly. For example, change 'outputPath' to '$[0]'.
+This can be used to add retry or error handling onto this state
+machine fragment.
+
+Be aware that this changes the result of the inner state machine
+to be an array with the result of the state machine in it. Adjust
+your paths accordingly. For example, change 'outputPath' to
+'$[0]'.
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.AcquireSemaphoreFragment.toSingleState.parameter.options"></a>
 
@@ -268,7 +275,8 @@ public prefixStates(prefix?: string): StateMachineFragment
 
 Prefix the IDs of all states in this state machine fragment.
 
-Use this to avoid multiple copies of the state machine all having the same state IDs.
+Use this to avoid multiple copies of the state machine all having the
+same state IDs.
 
 ###### `prefix`<sup>Optional</sup> <a name="prefix" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.prefixStates.parameter.prefix"></a>
 
@@ -288,7 +296,13 @@ public toSingleState(options?: SingleStateOptions): Parallel
 
 Wrap all states in this state machine fragment up into a single state.
 
-This can be used to add retry or error handling onto this state machine fragment.  Be aware that this changes the result of the inner state machine to be an array with the result of the state machine in it. Adjust your paths accordingly. For example, change 'outputPath' to '$[0]'.
+This can be used to add retry or error handling onto this state
+machine fragment.
+
+Be aware that this changes the result of the inner state machine
+to be an array with the result of the state machine in it. Adjust
+your paths accordingly. For example, change 'outputPath' to
+'$[0]'.
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.toSingleState.parameter.options"></a>
 
@@ -654,7 +668,8 @@ public prefixStates(prefix?: string): StateMachineFragment
 
 Prefix the IDs of all states in this state machine fragment.
 
-Use this to avoid multiple copies of the state machine all having the same state IDs.
+Use this to avoid multiple copies of the state machine all having the
+same state IDs.
 
 ###### `prefix`<sup>Optional</sup> <a name="prefix" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.prefixStates.parameter.prefix"></a>
 
@@ -674,7 +689,13 @@ public toSingleState(options?: SingleStateOptions): Parallel
 
 Wrap all states in this state machine fragment up into a single state.
 
-This can be used to add retry or error handling onto this state machine fragment.  Be aware that this changes the result of the inner state machine to be an array with the result of the state machine in it. Adjust your paths accordingly. For example, change 'outputPath' to '$[0]'.
+This can be used to add retry or error handling onto this state
+machine fragment.
+
+Be aware that this changes the result of the inner state machine
+to be an array with the result of the state machine in it. Adjust
+your paths accordingly. For example, change 'outputPath' to
+'$[0]'.
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.toSingleState.parameter.options"></a>
 
@@ -843,7 +864,8 @@ public prefixStates(prefix?: string): StateMachineFragment
 
 Prefix the IDs of all states in this state machine fragment.
 
-Use this to avoid multiple copies of the state machine all having the same state IDs.
+Use this to avoid multiple copies of the state machine all having the
+same state IDs.
 
 ###### `prefix`<sup>Optional</sup> <a name="prefix" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.prefixStates.parameter.prefix"></a>
 
@@ -863,7 +885,13 @@ public toSingleState(options?: SingleStateOptions): Parallel
 
 Wrap all states in this state machine fragment up into a single state.
 
-This can be used to add retry or error handling onto this state machine fragment.  Be aware that this changes the result of the inner state machine to be an array with the result of the state machine in it. Adjust your paths accordingly. For example, change 'outputPath' to '$[0]'.
+This can be used to add retry or error handling onto this state
+machine fragment.
+
+Be aware that this changes the result of the inner state machine
+to be an array with the result of the state machine in it. Adjust
+your paths accordingly. For example, change 'outputPath' to
+'$[0]'.
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.toSingleState.parameter.options"></a>
 
@@ -988,7 +1016,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
@@ -1063,7 +1094,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
@@ -1161,7 +1195,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
@@ -1359,7 +1396,10 @@ public readonly defaultSemaphore: SemaphoreDefinition;
 
 The default semaphore settings.
 
-It is used when no other pattern of semaphore applied. This can be used as a quick start when working with a single arbitrary resource.  NOTE: the default semaphore name cannot use JsonPath expression for the sake of a safe fallback.
+It is used when no other pattern of semaphore applied.
+This can be used as a quick start when working with a single arbitrary resource.
+
+NOTE: the default semaphore name cannot use JsonPath expression for the sake of a safe fallback.
 
 ---
 
@@ -1414,7 +1454,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
@@ -1441,7 +1484,10 @@ public readonly checkSemaphoreUseFirst: boolean;
 
 Check if the semaphore use exists before trying to release it.
 
-This can help to shift the load from write capacity to read capacity in case of missing semaphore use (best effort to avoid hot partitions and save write capacity for crucial actions), where DDB provides 3x throughput on read capacity than write capacity per partition. see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
+This can help to shift the load from write capacity to read capacity in case of missing semaphore use
+(best effort to avoid hot partitions and save write capacity for crucial actions),
+where DDB provides 3x throughput on read capacity than write capacity per partition.
+see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
 
 ---
 
@@ -1490,7 +1536,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
@@ -1517,7 +1566,10 @@ public readonly checkSemaphoreUseFirst: boolean;
 
 Check if the semaphore use exists before trying to release it.
 
-This can help to shift the load from write capacity to read capacity in case of missing semaphore use (best effort to avoid hot partitions and save write capacity for crucial actions), where DDB provides 3x throughput on read capacity than write capacity per partition. see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
+This can help to shift the load from write capacity to read capacity in case of missing semaphore use
+(best effort to avoid hot partitions and save write capacity for crucial actions),
+where DDB provides 3x throughput on read capacity than write capacity per partition.
+see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
 
 ---
 
@@ -1578,7 +1630,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
@@ -1605,7 +1660,10 @@ public readonly checkSemaphoreUseFirst: boolean;
 
 Check if the semaphore use exists before trying to release it.
 
-This can help to shift the load from write capacity to read capacity in case of missing semaphore use (best effort to avoid hot partitions and save write capacity for crucial actions), where DDB provides 3x throughput on read capacity than write capacity per partition. see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
+This can help to shift the load from write capacity to read capacity in case of missing semaphore use
+(best effort to avoid hot partitions and save write capacity for crucial actions),
+where DDB provides 3x throughput on read capacity than write capacity per partition.
+see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-center/dynamodb-table-throttled/#You_have_a_hot_partition_in_your_table
 
 ---
 
@@ -1744,7 +1802,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
@@ -1919,7 +1980,10 @@ public readonly name: string;
 
 The name for the semaphore.
 
-Or it can be JsonPath expression that extracts the value from the state object at runtime. This allows custom semaphore names from runtime input for multiple resources.  Example value: `$.semaphoreName`
+Or it can be JsonPath expression that extracts the value from the state object at runtime.
+This allows custom semaphore names from runtime input for multiple resources.
+
+Example value: `$.semaphoreName`
 
 ---
 
