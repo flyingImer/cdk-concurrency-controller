@@ -1,7 +1,8 @@
-import { Construct, Duration } from 'monocdk';
-import { Attribute, AttributeType, ITable } from 'monocdk/aws-dynamodb';
-import { Choice, Condition, Errors, IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, Pass, RetryProps, State, StateMachineFragment, TaskInput, Wait, WaitTime } from 'monocdk/aws-stepfunctions';
-import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
+import { Duration } from 'aws-cdk-lib';
+import { Attribute, AttributeType, ITable } from 'aws-cdk-lib/aws-dynamodb';
+import { Choice, Condition, Errors, IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, Pass, RetryProps, State, StateMachineFragment, TaskInput, Wait, WaitTime } from 'aws-cdk-lib/aws-stepfunctions';
+import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'aws-cdk-lib/aws-stepfunctions-tasks';
+import { Construct } from 'constructs';
 import { isDeterminedNonNegativeInteger } from './private/utils';
 
 export interface SemaphoreTableDefinition {

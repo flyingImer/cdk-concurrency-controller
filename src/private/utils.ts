@@ -1,4 +1,4 @@
-import { isPositiveInteger, JsonPath } from 'monocdk/aws-stepfunctions';
+import { isPositiveInteger, JsonPath } from 'aws-cdk-lib/aws-stepfunctions';
 
 /**
  * Check if the given literal string is a non negative integer value at compile time.

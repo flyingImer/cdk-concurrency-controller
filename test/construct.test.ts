@@ -1,7 +1,7 @@
-import { App, Duration, RemovalPolicy, Stack } from 'monocdk';
-import { Match, Template } from 'monocdk/assertions';
-import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { JsonPath, LogLevel, Pass, StateGraph, StateMachine } from 'monocdk/aws-stepfunctions';
+import { App, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { Match, Template } from 'aws-cdk-lib/assertions';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { JsonPath, LogLevel, Pass, StateGraph, StateMachine } from 'aws-cdk-lib/aws-stepfunctions';
 import { SemaphoreDefinition } from '../src/fragments';
 import { DistributedSemaphore, SemaphoreStateMachineProps } from '../src/semaphore';
 

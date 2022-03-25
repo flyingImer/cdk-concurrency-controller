@@ -1,8 +1,9 @@
-import { Construct, Duration } from 'monocdk';
-import { AttributeType, BillingMode, Table } from 'monocdk/aws-dynamodb';
-import { IChainable, IStateMachine, JsonPath, LogOptions, Pass, StateMachine, StateMachineFragment } from 'monocdk/aws-stepfunctions';
-import { Rule } from 'monocdk/lib/aws-events';
-import { SfnStateMachine } from 'monocdk/lib/aws-events-targets';
+import { Duration } from 'aws-cdk-lib';
+import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
+import { Rule } from 'aws-cdk-lib/aws-events';
+import { SfnStateMachine } from 'aws-cdk-lib/aws-events-targets';
+import { IChainable, IStateMachine, JsonPath, LogOptions, Pass, StateMachine, StateMachineFragment } from 'aws-cdk-lib/aws-stepfunctions';
+import { Construct } from 'constructs';
 import { AcquireSemaphoreFragment, AcquireSemaphoreOptions, AcquireViaStartExecutionFragment, ReleaseSemaphoreFragment, ReleaseSemaphoreOptions, ReleaseViaStartExecutionFragment, SemaphoreDefinition, SemaphoreTableDefinition, SemaphoreTimeoutOptions, SemaphoreUseDefinition } from './fragments';
 import { isDeterminedNonNegativeInteger } from './private/utils';
 

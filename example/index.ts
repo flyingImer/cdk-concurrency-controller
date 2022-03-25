@@ -1,11 +1,12 @@
-// TODO: migrate Construct for cdk v2
 import * as path from 'path';
-import { Construct, Stack, StackProps, App, Duration, RemovalPolicy } from 'monocdk';
-import { Runtime } from 'monocdk/aws-lambda';
-import { PythonFunction } from 'monocdk/aws-lambda-python';
-import { LogGroup, RetentionDays } from 'monocdk/aws-logs';
-import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Map, Errors, IntegrationPattern, IStateMachine, Result } from 'monocdk/aws-stepfunctions';
-import { LambdaInvoke, StepFunctionsStartExecution } from 'monocdk/aws-stepfunctions-tasks';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { PythonFunction } from '@aws-cdk/aws-lambda-python-alpha';
+import { Stack, StackProps, App, Duration, RemovalPolicy } from 'aws-cdk-lib';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Map, Errors, IntegrationPattern, IStateMachine, Result } from 'aws-cdk-lib/aws-stepfunctions';
+import { LambdaInvoke, StepFunctionsStartExecution } from 'aws-cdk-lib/aws-stepfunctions-tasks';
+import { Construct } from 'constructs';
 import { DistributedSemaphore as DS } from '../src/semaphore';
 
 class TestStack extends Stack {

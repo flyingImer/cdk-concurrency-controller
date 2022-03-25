@@ -14,7 +14,7 @@ new AcquireSemaphoreFragment(scope: Construct, id: string, props: AcquireSemapho
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.scope">scope</a></code> | <code>constructs.Construct</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps">AcquireSemaphoreFragmentProps</a></code> | *No description.* |
 
@@ -22,7 +22,7 @@ new AcquireSemaphoreFragment(scope: Construct, id: string, props: AcquireSemapho
 
 ##### `scope`<sup>Required</sup> <a name="scope" id="cdk-concurrency-controller.AcquireSemaphoreFragment.Initializer.parameter.scope"></a>
 
-- *Type:* monocdk.Construct
+- *Type:* constructs.Construct
 
 ---
 
@@ -67,7 +67,7 @@ Continue normal execution with the given state.
 
 ###### `next`<sup>Required</sup> <a name="next" id="cdk-concurrency-controller.AcquireSemaphoreFragment.next.parameter.next"></a>
 
-- *Type:* monocdk.aws_stepfunctions.IChainable
+- *Type:* aws-cdk-lib.aws_stepfunctions.IChainable
 
 ---
 
@@ -110,7 +110,7 @@ your paths accordingly. For example, change 'outputPath' to
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.AcquireSemaphoreFragment.toSingleState.parameter.options"></a>
 
-- *Type:* monocdk.aws_stepfunctions.SingleStateOptions
+- *Type:* aws-cdk-lib.aws_stepfunctions.SingleStateOptions
 
 ---
 
@@ -118,11 +118,11 @@ your paths accordingly. For example, change 'outputPath' to
 
 | **Name** | **Description** |
 | --- | --- |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct">isConstruct</a></code> | Return whether the given object is a Construct. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct">isConstruct</a></code> | Checks if `x` is a construct. |
 
 ---
 
-##### `isConstruct` <a name="isConstruct" id="cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct"></a>
+##### ~~`isConstruct`~~ <a name="isConstruct" id="cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct"></a>
 
 ```typescript
 import { AcquireSemaphoreFragment } from 'cdk-concurrency-controller'
@@ -130,11 +130,13 @@ import { AcquireSemaphoreFragment } from 'cdk-concurrency-controller'
 AcquireSemaphoreFragment.isConstruct(x: any)
 ```
 
-Return whether the given object is a Construct.
+Checks if `x` is a construct.
 
 ###### `x`<sup>Required</sup> <a name="x" id="cdk-concurrency-controller.AcquireSemaphoreFragment.isConstruct.parameter.x"></a>
 
 - *Type:* any
+
+Any object.
 
 ---
 
@@ -142,22 +144,22 @@ Return whether the given object is a Construct.
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.endStates">endStates</a></code> | <code>monocdk.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.node">node</a></code> | <code>constructs.Node</code> | The tree node. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.endStates">endStates</a></code> | <code>aws-cdk-lib.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.id">id</a></code> | <code>string</code> | Descriptive identifier for this chainable. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.startState">startState</a></code> | <code>monocdk.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragment.property.startState">startState</a></code> | <code>aws-cdk-lib.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
 
 ---
 
 ##### `node`<sup>Required</sup> <a name="node" id="cdk-concurrency-controller.AcquireSemaphoreFragment.property.node"></a>
 
 ```typescript
-public readonly node: ConstructNode;
+public readonly node: Node;
 ```
 
-- *Type:* monocdk.ConstructNode
+- *Type:* constructs.Node
 
-The construct tree node associated with this construct.
+The tree node.
 
 ---
 
@@ -167,7 +169,7 @@ The construct tree node associated with this construct.
 public readonly endStates: INextable[];
 ```
 
-- *Type:* monocdk.aws_stepfunctions.INextable[]
+- *Type:* aws-cdk-lib.aws_stepfunctions.INextable[]
 
 The states to chain onto if this fragment is used.
 
@@ -191,7 +193,7 @@ Descriptive identifier for this chainable.
 public readonly startState: State;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.State
+- *Type:* aws-cdk-lib.aws_stepfunctions.State
 
 The start state of this state machine fragment.
 
@@ -210,7 +212,7 @@ new AcquireViaStartExecutionFragment(scope: Construct, id: string, props: Acquir
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.Initializer.parameter.scope">scope</a></code> | <code>constructs.Construct</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps">AcquireViaStartExecutionFragmentProps</a></code> | *No description.* |
 
@@ -218,7 +220,7 @@ new AcquireViaStartExecutionFragment(scope: Construct, id: string, props: Acquir
 
 ##### `scope`<sup>Required</sup> <a name="scope" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.Initializer.parameter.scope"></a>
 
-- *Type:* monocdk.Construct
+- *Type:* constructs.Construct
 
 ---
 
@@ -263,7 +265,7 @@ Continue normal execution with the given state.
 
 ###### `next`<sup>Required</sup> <a name="next" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.next.parameter.next"></a>
 
-- *Type:* monocdk.aws_stepfunctions.IChainable
+- *Type:* aws-cdk-lib.aws_stepfunctions.IChainable
 
 ---
 
@@ -306,7 +308,7 @@ your paths accordingly. For example, change 'outputPath' to
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.toSingleState.parameter.options"></a>
 
-- *Type:* monocdk.aws_stepfunctions.SingleStateOptions
+- *Type:* aws-cdk-lib.aws_stepfunctions.SingleStateOptions
 
 ---
 
@@ -314,11 +316,11 @@ your paths accordingly. For example, change 'outputPath' to
 
 | **Name** | **Description** |
 | --- | --- |
-| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.isConstruct">isConstruct</a></code> | Return whether the given object is a Construct. |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.isConstruct">isConstruct</a></code> | Checks if `x` is a construct. |
 
 ---
 
-##### `isConstruct` <a name="isConstruct" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.isConstruct"></a>
+##### ~~`isConstruct`~~ <a name="isConstruct" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.isConstruct"></a>
 
 ```typescript
 import { AcquireViaStartExecutionFragment } from 'cdk-concurrency-controller'
@@ -326,11 +328,13 @@ import { AcquireViaStartExecutionFragment } from 'cdk-concurrency-controller'
 AcquireViaStartExecutionFragment.isConstruct(x: any)
 ```
 
-Return whether the given object is a Construct.
+Checks if `x` is a construct.
 
 ###### `x`<sup>Required</sup> <a name="x" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.isConstruct.parameter.x"></a>
 
 - *Type:* any
+
+Any object.
 
 ---
 
@@ -338,22 +342,22 @@ Return whether the given object is a Construct.
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
-| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.endStates">endStates</a></code> | <code>monocdk.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.node">node</a></code> | <code>constructs.Node</code> | The tree node. |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.endStates">endStates</a></code> | <code>aws-cdk-lib.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
 | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.id">id</a></code> | <code>string</code> | Descriptive identifier for this chainable. |
-| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.startState">startState</a></code> | <code>monocdk.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.startState">startState</a></code> | <code>aws-cdk-lib.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
 
 ---
 
 ##### `node`<sup>Required</sup> <a name="node" id="cdk-concurrency-controller.AcquireViaStartExecutionFragment.property.node"></a>
 
 ```typescript
-public readonly node: ConstructNode;
+public readonly node: Node;
 ```
 
-- *Type:* monocdk.ConstructNode
+- *Type:* constructs.Node
 
-The construct tree node associated with this construct.
+The tree node.
 
 ---
 
@@ -363,7 +367,7 @@ The construct tree node associated with this construct.
 public readonly endStates: INextable[];
 ```
 
-- *Type:* monocdk.aws_stepfunctions.INextable[]
+- *Type:* aws-cdk-lib.aws_stepfunctions.INextable[]
 
 The states to chain onto if this fragment is used.
 
@@ -387,7 +391,7 @@ Descriptive identifier for this chainable.
 public readonly startState: State;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.State
+- *Type:* aws-cdk-lib.aws_stepfunctions.State
 
 The start state of this state machine fragment.
 
@@ -406,7 +410,7 @@ new DistributedSemaphore(scope: Construct, id: string, props?: DistributedSemaph
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.scope">scope</a></code> | <code>constructs.Construct</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.DistributedSemaphoreProps">DistributedSemaphoreProps</a></code> | *No description.* |
 
@@ -414,7 +418,7 @@ new DistributedSemaphore(scope: Construct, id: string, props?: DistributedSemaph
 
 ##### `scope`<sup>Required</sup> <a name="scope" id="cdk-concurrency-controller.DistributedSemaphore.Initializer.parameter.scope"></a>
 
-- *Type:* monocdk.Construct
+- *Type:* constructs.Construct
 
 ---
 
@@ -484,11 +488,11 @@ use default semaphore if not specified.
 
 | **Name** | **Description** |
 | --- | --- |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.isConstruct">isConstruct</a></code> | Return whether the given object is a Construct. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.isConstruct">isConstruct</a></code> | Checks if `x` is a construct. |
 
 ---
 
-##### `isConstruct` <a name="isConstruct" id="cdk-concurrency-controller.DistributedSemaphore.isConstruct"></a>
+##### ~~`isConstruct`~~ <a name="isConstruct" id="cdk-concurrency-controller.DistributedSemaphore.isConstruct"></a>
 
 ```typescript
 import { DistributedSemaphore } from 'cdk-concurrency-controller'
@@ -496,11 +500,13 @@ import { DistributedSemaphore } from 'cdk-concurrency-controller'
 DistributedSemaphore.isConstruct(x: any)
 ```
 
-Return whether the given object is a Construct.
+Checks if `x` is a construct.
 
 ###### `x`<sup>Required</sup> <a name="x" id="cdk-concurrency-controller.DistributedSemaphore.isConstruct.parameter.x"></a>
 
 - *Type:* any
+
+Any object.
 
 ---
 
@@ -508,12 +514,12 @@ Return whether the given object is a Construct.
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.acquireSemaphoreStateMachine">acquireSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.node">node</a></code> | <code>constructs.Node</code> | The tree node. |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.acquireSemaphoreStateMachine">acquireSemaphoreStateMachine</a></code> | <code>aws-cdk-lib.aws_stepfunctions.IStateMachine</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.allSemaphores">allSemaphores</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a>[]</code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.cleanupSemaphoreStateMachine">cleanupSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.cleanupSemaphoreStateMachine">cleanupSemaphoreStateMachine</a></code> | <code>aws-cdk-lib.aws_stepfunctions.IStateMachine</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.defaultSemaphore">defaultSemaphore</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreDefinition">SemaphoreDefinition</a></code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.releaseSemaphoreStateMachine">releaseSemaphoreStateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.releaseSemaphoreStateMachine">releaseSemaphoreStateMachine</a></code> | <code>aws-cdk-lib.aws_stepfunctions.IStateMachine</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.DistributedSemaphore.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | *No description.* |
 
 ---
@@ -521,12 +527,12 @@ Return whether the given object is a Construct.
 ##### `node`<sup>Required</sup> <a name="node" id="cdk-concurrency-controller.DistributedSemaphore.property.node"></a>
 
 ```typescript
-public readonly node: ConstructNode;
+public readonly node: Node;
 ```
 
-- *Type:* monocdk.ConstructNode
+- *Type:* constructs.Node
 
-The construct tree node associated with this construct.
+The tree node.
 
 ---
 
@@ -536,7 +542,7 @@ The construct tree node associated with this construct.
 public readonly acquireSemaphoreStateMachine: IStateMachine;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.IStateMachine
+- *Type:* aws-cdk-lib.aws_stepfunctions.IStateMachine
 
 ---
 
@@ -556,7 +562,7 @@ public readonly allSemaphores: SemaphoreDefinition[];
 public readonly cleanupSemaphoreStateMachine: IStateMachine;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.IStateMachine
+- *Type:* aws-cdk-lib.aws_stepfunctions.IStateMachine
 
 ---
 
@@ -576,7 +582,7 @@ public readonly defaultSemaphore: SemaphoreDefinition;
 public readonly releaseSemaphoreStateMachine: IStateMachine;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.IStateMachine
+- *Type:* aws-cdk-lib.aws_stepfunctions.IStateMachine
 
 ---
 
@@ -603,7 +609,7 @@ new ReleaseSemaphoreFragment(scope: Construct, id: string, props: ReleaseSemapho
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.scope">scope</a></code> | <code>constructs.Construct</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps">ReleaseSemaphoreFragmentProps</a></code> | *No description.* |
 
@@ -611,7 +617,7 @@ new ReleaseSemaphoreFragment(scope: Construct, id: string, props: ReleaseSemapho
 
 ##### `scope`<sup>Required</sup> <a name="scope" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.Initializer.parameter.scope"></a>
 
-- *Type:* monocdk.Construct
+- *Type:* constructs.Construct
 
 ---
 
@@ -656,7 +662,7 @@ Continue normal execution with the given state.
 
 ###### `next`<sup>Required</sup> <a name="next" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.next.parameter.next"></a>
 
-- *Type:* monocdk.aws_stepfunctions.IChainable
+- *Type:* aws-cdk-lib.aws_stepfunctions.IChainable
 
 ---
 
@@ -699,7 +705,7 @@ your paths accordingly. For example, change 'outputPath' to
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.toSingleState.parameter.options"></a>
 
-- *Type:* monocdk.aws_stepfunctions.SingleStateOptions
+- *Type:* aws-cdk-lib.aws_stepfunctions.SingleStateOptions
 
 ---
 
@@ -707,11 +713,11 @@ your paths accordingly. For example, change 'outputPath' to
 
 | **Name** | **Description** |
 | --- | --- |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct">isConstruct</a></code> | Return whether the given object is a Construct. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct">isConstruct</a></code> | Checks if `x` is a construct. |
 
 ---
 
-##### `isConstruct` <a name="isConstruct" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct"></a>
+##### ~~`isConstruct`~~ <a name="isConstruct" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct"></a>
 
 ```typescript
 import { ReleaseSemaphoreFragment } from 'cdk-concurrency-controller'
@@ -719,11 +725,13 @@ import { ReleaseSemaphoreFragment } from 'cdk-concurrency-controller'
 ReleaseSemaphoreFragment.isConstruct(x: any)
 ```
 
-Return whether the given object is a Construct.
+Checks if `x` is a construct.
 
 ###### `x`<sup>Required</sup> <a name="x" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.isConstruct.parameter.x"></a>
 
 - *Type:* any
+
+Any object.
 
 ---
 
@@ -731,22 +739,22 @@ Return whether the given object is a Construct.
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.endStates">endStates</a></code> | <code>monocdk.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.node">node</a></code> | <code>constructs.Node</code> | The tree node. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.endStates">endStates</a></code> | <code>aws-cdk-lib.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.id">id</a></code> | <code>string</code> | Descriptive identifier for this chainable. |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.startState">startState</a></code> | <code>monocdk.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragment.property.startState">startState</a></code> | <code>aws-cdk-lib.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
 
 ---
 
 ##### `node`<sup>Required</sup> <a name="node" id="cdk-concurrency-controller.ReleaseSemaphoreFragment.property.node"></a>
 
 ```typescript
-public readonly node: ConstructNode;
+public readonly node: Node;
 ```
 
-- *Type:* monocdk.ConstructNode
+- *Type:* constructs.Node
 
-The construct tree node associated with this construct.
+The tree node.
 
 ---
 
@@ -756,7 +764,7 @@ The construct tree node associated with this construct.
 public readonly endStates: INextable[];
 ```
 
-- *Type:* monocdk.aws_stepfunctions.INextable[]
+- *Type:* aws-cdk-lib.aws_stepfunctions.INextable[]
 
 The states to chain onto if this fragment is used.
 
@@ -780,7 +788,7 @@ Descriptive identifier for this chainable.
 public readonly startState: State;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.State
+- *Type:* aws-cdk-lib.aws_stepfunctions.State
 
 The start state of this state machine fragment.
 
@@ -799,7 +807,7 @@ new ReleaseViaStartExecutionFragment(scope: Construct, id: string, props: Releas
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.Initializer.parameter.scope">scope</a></code> | <code>monocdk.Construct</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.Initializer.parameter.scope">scope</a></code> | <code>constructs.Construct</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.Initializer.parameter.props">props</a></code> | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps">ReleaseViaStartExecutionFragmentProps</a></code> | *No description.* |
 
@@ -807,7 +815,7 @@ new ReleaseViaStartExecutionFragment(scope: Construct, id: string, props: Releas
 
 ##### `scope`<sup>Required</sup> <a name="scope" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.Initializer.parameter.scope"></a>
 
-- *Type:* monocdk.Construct
+- *Type:* constructs.Construct
 
 ---
 
@@ -852,7 +860,7 @@ Continue normal execution with the given state.
 
 ###### `next`<sup>Required</sup> <a name="next" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.next.parameter.next"></a>
 
-- *Type:* monocdk.aws_stepfunctions.IChainable
+- *Type:* aws-cdk-lib.aws_stepfunctions.IChainable
 
 ---
 
@@ -895,7 +903,7 @@ your paths accordingly. For example, change 'outputPath' to
 
 ###### `options`<sup>Optional</sup> <a name="options" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.toSingleState.parameter.options"></a>
 
-- *Type:* monocdk.aws_stepfunctions.SingleStateOptions
+- *Type:* aws-cdk-lib.aws_stepfunctions.SingleStateOptions
 
 ---
 
@@ -903,11 +911,11 @@ your paths accordingly. For example, change 'outputPath' to
 
 | **Name** | **Description** |
 | --- | --- |
-| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.isConstruct">isConstruct</a></code> | Return whether the given object is a Construct. |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.isConstruct">isConstruct</a></code> | Checks if `x` is a construct. |
 
 ---
 
-##### `isConstruct` <a name="isConstruct" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.isConstruct"></a>
+##### ~~`isConstruct`~~ <a name="isConstruct" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.isConstruct"></a>
 
 ```typescript
 import { ReleaseViaStartExecutionFragment } from 'cdk-concurrency-controller'
@@ -915,11 +923,13 @@ import { ReleaseViaStartExecutionFragment } from 'cdk-concurrency-controller'
 ReleaseViaStartExecutionFragment.isConstruct(x: any)
 ```
 
-Return whether the given object is a Construct.
+Checks if `x` is a construct.
 
 ###### `x`<sup>Required</sup> <a name="x" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.isConstruct.parameter.x"></a>
 
 - *Type:* any
+
+Any object.
 
 ---
 
@@ -927,22 +937,22 @@ Return whether the given object is a Construct.
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.node">node</a></code> | <code>monocdk.ConstructNode</code> | The construct tree node associated with this construct. |
-| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.endStates">endStates</a></code> | <code>monocdk.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.node">node</a></code> | <code>constructs.Node</code> | The tree node. |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.endStates">endStates</a></code> | <code>aws-cdk-lib.aws_stepfunctions.INextable[]</code> | The states to chain onto if this fragment is used. |
 | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.id">id</a></code> | <code>string</code> | Descriptive identifier for this chainable. |
-| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.startState">startState</a></code> | <code>monocdk.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.startState">startState</a></code> | <code>aws-cdk-lib.aws_stepfunctions.State</code> | The start state of this state machine fragment. |
 
 ---
 
 ##### `node`<sup>Required</sup> <a name="node" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragment.property.node"></a>
 
 ```typescript
-public readonly node: ConstructNode;
+public readonly node: Node;
 ```
 
-- *Type:* monocdk.ConstructNode
+- *Type:* constructs.Node
 
-The construct tree node associated with this construct.
+The tree node.
 
 ---
 
@@ -952,7 +962,7 @@ The construct tree node associated with this construct.
 public readonly endStates: INextable[];
 ```
 
-- *Type:* monocdk.aws_stepfunctions.INextable[]
+- *Type:* aws-cdk-lib.aws_stepfunctions.INextable[]
 
 The states to chain onto if this fragment is used.
 
@@ -976,7 +986,7 @@ Descriptive identifier for this chainable.
 public readonly startState: State;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.State
+- *Type:* aws-cdk-lib.aws_stepfunctions.State
 
 The start state of this state machine fragment.
 
@@ -1002,7 +1012,7 @@ const acquireOptions: AcquireOptions = { ... }
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.nextTryWaitTime">nextTryWaitTime</a></code> | <code>string</code> | Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries. |
-| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for the execution. |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 
 ---
 
@@ -1054,7 +1064,7 @@ Wait a fixed amount of time (in second) for another try to acquire semaphore if 
 public readonly timeout: Duration;
 ```
 
-- *Type:* monocdk.Duration
+- *Type:* aws-cdk-lib.Duration
 - *Default:* No timeout
 
 Maximum run time for the execution.
@@ -1080,7 +1090,7 @@ const acquireSemaphoreFragmentProps: AcquireSemaphoreFragmentProps = { ... }
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.nextTryWaitTime">nextTryWaitTime</a></code> | <code>string</code> | Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.limit">limit</a></code> | <code>string</code> | The value for concurrency control. |
 | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
-| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.AcquireSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>aws-cdk-lib.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 
 ---
 
@@ -1156,7 +1166,7 @@ The DynamoDB table to use for the semaphore.
 public readonly retryStrategy: RetryProps;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Type:* aws-cdk-lib.aws_stepfunctions.RetryProps
 - *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
 
 Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
@@ -1302,9 +1312,9 @@ const acquireViaStartExecutionFragmentProps: AcquireViaStartExecutionFragmentPro
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for the execution. |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.input">input</a></code> | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreTaskInput">AcquireSemaphoreTaskInput</a></code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.stateMachine">stateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | The Step Functions state machine to start the execution on. |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.stateMachine">stateMachine</a></code> | <code>aws-cdk-lib.aws_stepfunctions.IStateMachine</code> | The Step Functions state machine to start the execution on. |
 
 ---
 
@@ -1314,7 +1324,7 @@ const acquireViaStartExecutionFragmentProps: AcquireViaStartExecutionFragmentPro
 public readonly timeout: Duration;
 ```
 
-- *Type:* monocdk.Duration
+- *Type:* aws-cdk-lib.Duration
 - *Default:* No timeout
 
 Maximum run time for the execution.
@@ -1337,7 +1347,7 @@ public readonly input: AcquireSemaphoreTaskInput;
 public readonly stateMachine: IStateMachine;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.IStateMachine
+- *Type:* aws-cdk-lib.aws_stepfunctions.IStateMachine
 
 The Step Functions state machine to start the execution on.
 
@@ -1440,7 +1450,7 @@ const releaseOptions: ReleaseOptions = { ... }
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
-| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for the execution. |
+| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 
 ---
 
@@ -1497,7 +1507,7 @@ see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-ce
 public readonly timeout: Duration;
 ```
 
-- *Type:* monocdk.Duration
+- *Type:* aws-cdk-lib.Duration
 - *Default:* No timeout
 
 Maximum run time for the execution.
@@ -1522,7 +1532,7 @@ const releaseSemaphoreFragmentProps: ReleaseSemaphoreFragmentProps = { ... }
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
 | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.semaphoreTable">semaphoreTable</a></code> | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition">SemaphoreTableDefinition</a></code> | The DynamoDB table to use for the semaphore. |
-| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>monocdk.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
+| <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreFragmentProps.property.retryStrategy">retryStrategy</a></code> | <code>aws-cdk-lib.aws_stepfunctions.RetryProps</code> | Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table. |
 
 ---
 
@@ -1591,7 +1601,7 @@ The DynamoDB table to use for the semaphore.
 public readonly retryStrategy: RetryProps;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.RetryProps
+- *Type:* aws-cdk-lib.aws_stepfunctions.RetryProps
 - *Default:* '{ interval: Duration.seconds(1), maxAttempts: 5, backoffRate: 1.5 }'
 
 Retry strategy on Errors.ALL when releasing a semaphore use from the semaphore table.
@@ -1720,9 +1730,9 @@ const releaseViaStartExecutionFragmentProps: ReleaseViaStartExecutionFragmentPro
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for the execution. |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.input">input</a></code> | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreTaskInput">ReleaseSemaphoreTaskInput</a></code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.stateMachine">stateMachine</a></code> | <code>monocdk.aws_stepfunctions.IStateMachine</code> | The Step Functions state machine to start the execution on. |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.stateMachine">stateMachine</a></code> | <code>aws-cdk-lib.aws_stepfunctions.IStateMachine</code> | The Step Functions state machine to start the execution on. |
 
 ---
 
@@ -1732,7 +1742,7 @@ const releaseViaStartExecutionFragmentProps: ReleaseViaStartExecutionFragmentPro
 public readonly timeout: Duration;
 ```
 
-- *Type:* monocdk.Duration
+- *Type:* aws-cdk-lib.Duration
 - *Default:* No timeout
 
 Maximum run time for the execution.
@@ -1755,7 +1765,7 @@ public readonly input: ReleaseSemaphoreTaskInput;
 public readonly stateMachine: IStateMachine;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.IStateMachine
+- *Type:* aws-cdk-lib.aws_stepfunctions.IStateMachine
 
 The Step Functions state machine to start the execution on.
 
@@ -1823,8 +1833,8 @@ const semaphoreStateMachineProps: SemaphoreStateMachineProps = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for the execution. |
-| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.logs">logs</a></code> | <code>monocdk.aws_stepfunctions.LogOptions</code> | Defines what execution history events are logged and where they are logged. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.logs">logs</a></code> | <code>aws-cdk-lib.aws_stepfunctions.LogOptions</code> | Defines what execution history events are logged and where they are logged. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.tracingEnabled">tracingEnabled</a></code> | <code>boolean</code> | Specifies whether Amazon X-Ray tracing is enabled for this state machine. |
 
 ---
@@ -1835,7 +1845,7 @@ const semaphoreStateMachineProps: SemaphoreStateMachineProps = { ... }
 public readonly timeout: Duration;
 ```
 
-- *Type:* monocdk.Duration
+- *Type:* aws-cdk-lib.Duration
 - *Default:* No timeout
 
 Maximum run time for the execution.
@@ -1848,7 +1858,7 @@ Maximum run time for the execution.
 public readonly logs: LogOptions;
 ```
 
-- *Type:* monocdk.aws_stepfunctions.LogOptions
+- *Type:* aws-cdk-lib.aws_stepfunctions.LogOptions
 - *Default:* No logging
 
 Defines what execution history events are logged and where they are logged.
@@ -1883,8 +1893,8 @@ const semaphoreTableDefinition: SemaphoreTableDefinition = { ... }
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.countAttributeName">countAttributeName</a></code> | <code>string</code> | The attribute name for a semaphore in-use count. |
-| <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.partitionKey">partitionKey</a></code> | <code>monocdk.aws_dynamodb.Attribute</code> | *No description.* |
-| <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.table">table</a></code> | <code>monocdk.aws_dynamodb.ITable</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.partitionKey">partitionKey</a></code> | <code>aws-cdk-lib.aws_dynamodb.Attribute</code> | *No description.* |
+| <code><a href="#cdk-concurrency-controller.SemaphoreTableDefinition.property.table">table</a></code> | <code>aws-cdk-lib.aws_dynamodb.ITable</code> | *No description.* |
 
 ---
 
@@ -1906,7 +1916,7 @@ The attribute name for a semaphore in-use count.
 public readonly partitionKey: Attribute;
 ```
 
-- *Type:* monocdk.aws_dynamodb.Attribute
+- *Type:* aws-cdk-lib.aws_dynamodb.Attribute
 
 ---
 
@@ -1916,7 +1926,7 @@ public readonly partitionKey: Attribute;
 public readonly table: ITable;
 ```
 
-- *Type:* monocdk.aws_dynamodb.ITable
+- *Type:* aws-cdk-lib.aws_dynamodb.ITable
 
 ---
 
@@ -1934,7 +1944,7 @@ const semaphoreTimeoutOptions: SemaphoreTimeoutOptions = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
-| <code><a href="#cdk-concurrency-controller.SemaphoreTimeoutOptions.property.timeout">timeout</a></code> | <code>monocdk.Duration</code> | Maximum run time for the execution. |
+| <code><a href="#cdk-concurrency-controller.SemaphoreTimeoutOptions.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 
 ---
 
@@ -1944,7 +1954,7 @@ const semaphoreTimeoutOptions: SemaphoreTimeoutOptions = { ... }
 public readonly timeout: Duration;
 ```
 
-- *Type:* monocdk.Duration
+- *Type:* aws-cdk-lib.Duration
 - *Default:* No timeout
 
 Maximum run time for the execution.
