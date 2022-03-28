@@ -71,13 +71,16 @@ export class ExperimentalDistributedSemaphore extends DistributedSemaphore {
         // FIXME: go back up to 25 hours
         StartTime: JsonPath.stringAt('$$.Execution.StartTime'),
         EndTime: JsonPath.stringAt('$$.Execution.StartTime'),
-        QueryString: `fields details.input, @timestamp, @message, @logStream
-                      | filter id = '1'
-                      | parse details.input /\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID\":\"(?<semaphoreUseExecutionArn>.*?)\"/
-                      | parse details.input /\"name\":\"(?<semaphoreName>.*?)\"/
-                      | parse details.input /\"userId\":\"(?<semaphoreUserId>.*?)\"/
-                      | filter semaphoreUseExecutionArn = '"$$.Execution.Input.detail.executionArn"'
-                      | display semaphoreUseExecutionArn, semaphoreName, semaphoreUserId`,
+        QueryString: JsonPath.format(
+          `fields details.input, @timestamp, @message, @logStream
+          | filter id = '1'
+          | parse details.input /\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID\":\"(?<semaphoreUseExecutionArn>.*?)\"/
+          | parse details.input /\"name\":\"(?<semaphoreName>.*?)\"/
+          | parse details.input /\"userId\":\"(?<semaphoreUserId>.*?)\"/
+          | filter semaphoreUseExecutionArn = '{}'
+          | display semaphoreUseExecutionArn, semaphoreName, semaphoreUserId`,
+          JsonPath.stringAt('$$.Execution.Input.detail.executionArn'),
+        ),
       },
       iamResources: [this.acquireSemaphoreStateMachineProps!.logs!.destination.logGroupArn],
       // TODO: add result selection
