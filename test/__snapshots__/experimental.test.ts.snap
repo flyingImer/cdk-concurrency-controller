@@ -1,0 +1,1384 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Semaphore snapshots snapshot tests: exp state machine definition 1`] = `
+Object {
+  "StartAt": "LocateFailedExecutionsSnapshot",
+  "States": Object {
+    "LocateFailedExecutionsSnapshot": Object {
+      "Catch": null,
+      "Comment": null,
+      "HeartbeatSeconds": null,
+      "InputPath": null,
+      "Next": "MapToCleanupsSnapshot",
+      "OutputPath": null,
+      "Parameters": Object {
+        "EndTime.$": "$$.Execution.StartTime",
+        "QueryString": "fields details.input, @timestamp, @message, @logStream
+                      | filter id = '1'
+                      | parse details.input /\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID\\":\\"(?<semaphoreUseExecutionArn>.*?)\\"/
+                      | parse details.input /\\"name\\":\\"(?<semaphoreName>.*?)\\"/
+                      | parse details.input /\\"userId\\":\\"(?<semaphoreUserId>.*?)\\"/
+                      | filter semaphoreUseExecutionArn = '\\"$$.Execution.Input.detail.executionArn\\"'
+                      | display semaphoreUseExecutionArn, semaphoreName, semaphoreUserId",
+        "StartTime.$": "$$.Execution.StartTime",
+      },
+      "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::aws-sdk:cloudwatchlogs:startQuery",
+      "ResultPath": null,
+      "Retry": null,
+      "TimeoutSeconds": null,
+      "Type": "Task",
+    },
+    "MapToCleanupsSnapshot": Object {
+      "Catch": null,
+      "Comment": null,
+      "End": true,
+      "InputPath": null,
+      "ItemsPath": "\${Token[NORMALIZED_ID]}",
+      "Iterator": Object {
+        "StartAt": "ParseOriginalInputSnapshot",
+        "States": Object {
+          "CheckIfFoundSemaphore": Object {
+            "Choices": Array [
+              Object {
+                "IsPresent": true,
+                "Next": "PrepareInput",
+                "Variable": "$.semaphoreInfo.currentSemaphoreUse.Item",
+              },
+            ],
+            "Comment": null,
+            "Default": "SemaphoreUseNotFoundContinue",
+            "InputPath": null,
+            "OutputPath": null,
+            "Parameters": null,
+            "Type": "Choice",
+          },
+          "CheckIfFoundSemaphoreUse": Object {
+            "Choices": Array [
+              Object {
+                "And": Array [
+                  Object {
+                    "IsPresent": true,
+                    "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+                  },
+                  Object {
+                    "StringMatches": "*Z*",
+                    "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+                  },
+                ],
+                "Next": "TryToReleaseSemaphore",
+              },
+            ],
+            "Comment": "This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.",
+            "Default": "SemaphoreUseNotFoundContinue",
+            "InputPath": null,
+            "OutputPath": null,
+            "Parameters": null,
+            "Type": "Choice",
+          },
+          "GetSemaphoreUse": Object {
+            "Catch": null,
+            "Comment": "Get info from DDB for the semaphore item.",
+            "HeartbeatSeconds": null,
+            "InputPath": null,
+            "Next": "CheckIfFoundSemaphore",
+            "OutputPath": null,
+            "Parameters": Object {
+              "ConsistentRead": true,
+              "ExpressionAttributeNames": Object {
+                "#semaphoreUserId.$": "$.userId",
+              },
+              "Key": Object {
+                "SemaphoreName": Object {
+                  "S.$": "$.name",
+                },
+              },
+              "ProjectionExpression": "#semaphoreUserId",
+              "TableName": "\${Token[NORMALIZED_ID]}",
+            },
+            "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:getItem",
+            "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+            "Retry": Array [
+              Object {
+                "BackoffRate": 2,
+                "ErrorEquals": Array [
+                  "States.ALL",
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+              },
+            ],
+            "TimeoutSeconds": null,
+            "Type": "Task",
+          },
+          "ParseOriginalInputSnapshot": Object {
+            "Comment": null,
+            "InputPath": null,
+            "Next": "GetSemaphoreUse",
+            "OutputPath": "$.OriginalInput",
+            "Parameters": Object {
+              "OriginalInput.$": "States.StringToJson($$.Execution.Input.detail.input)",
+            },
+            "Result": null,
+            "ResultPath": null,
+            "Type": "Pass",
+          },
+          "PrepareInput": Object {
+            "Comment": null,
+            "InputPath": null,
+            "Next": "CheckIfFoundSemaphoreUse",
+            "OutputPath": null,
+            "Parameters": Object {
+              "Item.$": "$.semaphoreInfo.currentSemaphoreUse.Item",
+              "ItemString.$": "States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)",
+            },
+            "Result": null,
+            "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+            "Type": "Pass",
+          },
+          "SemaphoreReleased": Object {
+            "Comment": null,
+            "End": true,
+            "InputPath": null,
+            "OutputPath": null,
+            "Parameters": null,
+            "Result": null,
+            "ResultPath": null,
+            "Type": "Pass",
+          },
+          "SemaphoreUseNotFoundContinue": Object {
+            "Comment": null,
+            "InputPath": null,
+            "Next": "SemaphoreReleased",
+            "OutputPath": null,
+            "Parameters": null,
+            "Result": null,
+            "ResultPath": null,
+            "Type": "Pass",
+          },
+          "TryToReleaseSemaphore": Object {
+            "Catch": Array [
+              Object {
+                "ErrorEquals": Array [
+                  "DynamoDB.ConditionalCheckFailedException",
+                ],
+                "Next": "SemaphoreUseNotFoundContinue",
+                "ResultPath": null,
+              },
+            ],
+            "Comment": "If this semaphoreUserId is still there, then clean it up and release the semaphore",
+            "HeartbeatSeconds": null,
+            "InputPath": null,
+            "Next": "SemaphoreReleased",
+            "OutputPath": null,
+            "Parameters": Object {
+              "ConditionExpression": "attribute_exists(#semaphoreUserId)",
+              "ExpressionAttributeNames": Object {
+                "#currentInUseCount": "CurrentInUseCount",
+                "#semaphoreUserId.$": "$.userId",
+              },
+              "ExpressionAttributeValues": Object {
+                ":decrease": Object {
+                  "N": "1",
+                },
+              },
+              "Key": Object {
+                "SemaphoreName": Object {
+                  "S.$": "$.name",
+                },
+              },
+              "ReturnValues": "UPDATED_NEW",
+              "TableName": "\${Token[NORMALIZED_ID]}",
+              "UpdateExpression": "SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId",
+            },
+            "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
+            "ResultPath": null,
+            "Retry": Array [
+              Object {
+                "BackoffRate": null,
+                "ErrorEquals": Array [
+                  "DynamoDB.ConditionalCheckFailedException",
+                ],
+                "IntervalSeconds": null,
+                "MaxAttempts": 0,
+              },
+              Object {
+                "BackoffRate": 1.4,
+                "ErrorEquals": Array [
+                  "States.ALL",
+                ],
+                "IntervalSeconds": 5,
+                "MaxAttempts": 20,
+              },
+            ],
+            "TimeoutSeconds": null,
+            "Type": "Task",
+          },
+        },
+        "TimeoutSeconds": null,
+      },
+      "MaxConcurrency": null,
+      "OutputPath": null,
+      "Parameters": null,
+      "ResultPath": null,
+      "Retry": null,
+      "Type": "Map",
+    },
+  },
+  "TimeoutSeconds": null,
+}
+`;
+
+exports[`snapshot test 1`] = `
+Object {
+  "Mappings": Object {
+    "ServiceprincipalMap": Object {
+      "af-south-1": Object {
+        "states": "states.af-south-1.amazonaws.com",
+      },
+      "ap-east-1": Object {
+        "states": "states.ap-east-1.amazonaws.com",
+      },
+      "ap-northeast-1": Object {
+        "states": "states.ap-northeast-1.amazonaws.com",
+      },
+      "ap-northeast-2": Object {
+        "states": "states.ap-northeast-2.amazonaws.com",
+      },
+      "ap-northeast-3": Object {
+        "states": "states.ap-northeast-3.amazonaws.com",
+      },
+      "ap-south-1": Object {
+        "states": "states.ap-south-1.amazonaws.com",
+      },
+      "ap-southeast-1": Object {
+        "states": "states.ap-southeast-1.amazonaws.com",
+      },
+      "ap-southeast-2": Object {
+        "states": "states.ap-southeast-2.amazonaws.com",
+      },
+      "ap-southeast-3": Object {
+        "states": "states.ap-southeast-3.amazonaws.com",
+      },
+      "ca-central-1": Object {
+        "states": "states.ca-central-1.amazonaws.com",
+      },
+      "cn-north-1": Object {
+        "states": "states.cn-north-1.amazonaws.com",
+      },
+      "cn-northwest-1": Object {
+        "states": "states.cn-northwest-1.amazonaws.com",
+      },
+      "eu-central-1": Object {
+        "states": "states.eu-central-1.amazonaws.com",
+      },
+      "eu-north-1": Object {
+        "states": "states.eu-north-1.amazonaws.com",
+      },
+      "eu-south-1": Object {
+        "states": "states.eu-south-1.amazonaws.com",
+      },
+      "eu-south-2": Object {
+        "states": "states.eu-south-2.amazonaws.com",
+      },
+      "eu-west-1": Object {
+        "states": "states.eu-west-1.amazonaws.com",
+      },
+      "eu-west-2": Object {
+        "states": "states.eu-west-2.amazonaws.com",
+      },
+      "eu-west-3": Object {
+        "states": "states.eu-west-3.amazonaws.com",
+      },
+      "me-south-1": Object {
+        "states": "states.me-south-1.amazonaws.com",
+      },
+      "sa-east-1": Object {
+        "states": "states.sa-east-1.amazonaws.com",
+      },
+      "us-east-1": Object {
+        "states": "states.us-east-1.amazonaws.com",
+      },
+      "us-east-2": Object {
+        "states": "states.us-east-2.amazonaws.com",
+      },
+      "us-gov-east-1": Object {
+        "states": "states.us-gov-east-1.amazonaws.com",
+      },
+      "us-gov-west-1": Object {
+        "states": "states.us-gov-west-1.amazonaws.com",
+      },
+      "us-iso-east-1": Object {
+        "states": "states.amazonaws.com",
+      },
+      "us-iso-west-1": Object {
+        "states": "states.amazonaws.com",
+      },
+      "us-isob-east-1": Object {
+        "states": "states.amazonaws.com",
+      },
+      "us-west-1": Object {
+        "states": "states.us-west-1.amazonaws.com",
+      },
+      "us-west-2": Object {
+        "states": "states.us-west-2.amazonaws.com",
+      },
+    },
+  },
+  "Parameters": Object {
+    "BootstrapVersion": Object {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": Object {
+    "AcquireSemaphoreLogGroupF74DE39B": Object {
+      "DeletionPolicy": "Delete",
+      "Properties": Object {
+        "RetentionInDays": 60,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968": Object {
+      "DependsOn": Array [
+        "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineRoleDefaultPolicy7EBC7908",
+        "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineRoleAE3AF832",
+      ],
+      "Properties": Object {
+        "DefinitionString": Object {
+          "Fn::Join": Array [
+            "",
+            Array [
+              "{\\"StartAt\\":\\"TryToAcquireSemaphore\\",\\"States\\":{\\"TryToAcquireSemaphore\\":{\\"Next\\":\\"SemaphoreAcquired\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"MaxAttempts\\":6,\\"BackoffRate\\":2}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.AmazonDynamoDBException\\"],\\"ResultPath\\":\\"$.semaphoreInfo.acquisitionError\\",\\"Next\\":\\"InitializeSemaphore\\"},{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":\\"$.semaphoreInfo.acquisitionError\\",\\"Next\\":\\"GetSemaphoreUse\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Try to acquire a semaphore using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held semaphores and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the semaphore was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of semaphores have already been distributed or 2) if the current execution already owns a semaphore. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given semaphoreName has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConditionExpression\\":\\"#currentInUseCount <> :limit and attribute_not_exists(#semaphoreUserId)\\",\\"ExpressionAttributeNames\\":{\\"#currentInUseCount\\":\\"CurrentInUseCount\\",\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ExpressionAttributeValues\\":{\\":increase\\":{\\"N\\":\\"1\\"},\\":limit\\":{\\"N.$\\":\\"$.limit\\"},\\":semaphoreUseAcquiredTime\\":{\\"S.$\\":\\"$$.State.EnteredTime\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentInUseCount = #currentInUseCount + :increase, #semaphoreUserId = :semaphoreUseAcquiredTime\\"}},\\"InitializeSemaphore\\":{\\"Next\\":\\"TryToAcquireSemaphore\\",\\"Catch\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"ResultPath\\":null,\\"Next\\":\\"TryToAcquireSemaphore\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"This state handles the case where an item hasn't been created for this semaphore yet. In that case, it will insert an initial item that includes the semaphore name as the key and CurrentInUseCount of 0. The Put to DynamoDB includes a conditional expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:putItem\\",\\"Parameters\\":{\\"Item\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"},\\"CurrentInUseCount\\":{\\"N\\":\\"0\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConditionExpression\\":\\"SemaphoreName <> :semaphoreName\\",\\"ExpressionAttributeValues\\":{\\":semaphoreName\\":{\\"S.$\\":\\"$.name\\"}}}},\\"WaitToAcquireSemaphore\\":{\\"Type\\":\\"Wait\\",\\"Comment\\":\\"If the semaphore indeed not been successfully Acquired, then wait for a bit before trying again.\\",\\"SecondsPath\\":\\"$.nextTryWaitTime\\",\\"Next\\":\\"TryToAcquireSemaphore\\"},\\"SemaphoreAcquired\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"SemaphoreAcquisitionConfirmedContinue\\":{\\"Type\\":\\"Pass\\",\\"Comment\\":\\"In this state, we have confirmed that semaphore is already held, so we pass the original execution input into the the function that does the work.\\",\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreAcquired\\"},\\"CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"SemaphoreAcquisitionConfirmedContinue\\"}],\\"Default\\":\\"WaitToAcquireSemaphore\\"},\\"PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Parameters\\":{\\"Item.$\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)\\"},\\"Next\\":\\"CheckIfFoundSemaphoreUse\\"},\\"CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"PrepareInput\\"}],\\"Default\\":\\"WaitToAcquireSemaphore\\"},\\"GetSemaphoreUse\\":{\\"Next\\":\\"CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the semaphore item.\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ProjectionExpression\\":\\"#semaphoreUserId\\"}}}}",
+            ],
+          ],
+        },
+        "LoggingConfiguration": Object {
+          "Destinations": Array [
+            Object {
+              "CloudWatchLogsLogGroup": Object {
+                "LogGroupArn": Object {
+                  "Fn::GetAtt": Array [
+                    "AcquireSemaphoreLogGroupF74DE39B",
+                    "Arn",
+                  ],
+                },
+              },
+            },
+          ],
+          "IncludeExecutionData": true,
+          "Level": "ALL",
+        },
+        "RoleArn": Object {
+          "Fn::GetAtt": Array [
+            "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineRoleAE3AF832",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineRoleAE3AF832": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": Object {
+                  "Fn::FindInMap": Array [
+                    "ServiceprincipalMap",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    "states",
+                  ],
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineRoleDefaultPolicy7EBC7908": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": Array [
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeLogGroups",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            Object {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": "dynamodb:PutItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineRoleDefaultPolicy7EBC7908",
+        "Roles": Array [
+          Object {
+            "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineRoleAE3AF832",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineEventsRoleDefaultPolicy4F90A272": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Ref": "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineF1B186E2",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineEventsRoleDefaultPolicy4F90A272",
+        "Roles": Array [
+          Object {
+            "Ref": "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineEventsRoleEC44E020",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineEventsRoleEC44E020": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": "events.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineF1B186E2": Object {
+      "DependsOn": Array [
+        "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineRoleDefaultPolicyE2B4070F",
+        "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineRole80BEC412",
+      ],
+      "Properties": Object {
+        "DefinitionString": Object {
+          "Fn::Join": Array [
+            "",
+            Array [
+              "{\\"StartAt\\":\\"ParseOriginalInput\\",\\"States\\":{\\"ParseOriginalInput\\":{\\"Type\\":\\"Pass\\",\\"Parameters\\":{\\"OriginalInput.$\\":\\"States.StringToJson($$.Execution.Input.detail.input)\\"},\\"OutputPath\\":\\"$.OriginalInput\\",\\"Next\\":\\"GetSemaphoreUse\\"},\\"GetSemaphoreUse\\":{\\"Next\\":\\"CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the semaphore item.\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ProjectionExpression\\":\\"#semaphoreUserId\\"}},\\"CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"PrepareInput\\"}],\\"Default\\":\\"SemaphoreUseNotFoundContinue\\"},\\"SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreReleased\\"},\\"TryToReleaseSemaphore\\":{\\"Next\\":\\"SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this semaphoreUserId is still there, then clean it up and release the semaphore\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#semaphoreUserId)\\",\\"ExpressionAttributeNames\\":{\\"#currentInUseCount\\":\\"CurrentInUseCount\\",\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId\\"}},\\"CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"TryToReleaseSemaphore\\"}],\\"Default\\":\\"SemaphoreUseNotFoundContinue\\"},\\"PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Parameters\\":{\\"Item.$\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)\\"},\\"Next\\":\\"CheckIfFoundSemaphoreUse\\"},\\"SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true}}}",
+            ],
+          ],
+        },
+        "RoleArn": Object {
+          "Fn::GetAtt": Array [
+            "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineRole80BEC412",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineRole80BEC412": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": Object {
+                  "Fn::FindInMap": Array [
+                    "ServiceprincipalMap",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    "states",
+                  ],
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineRoleDefaultPolicyE2B4070F": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineRoleDefaultPolicyE2B4070F",
+        "Roles": Array [
+          Object {
+            "Ref": "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineRole80BEC412",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ExperimentalDistributedSemaphoreExperimentalStateMachineD05D6C2E": Object {
+      "DependsOn": Array [
+        "ExperimentalDistributedSemaphoreExperimentalStateMachineRoleDefaultPolicy11247B44",
+        "ExperimentalDistributedSemaphoreExperimentalStateMachineRoleB0FE216A",
+      ],
+      "Properties": Object {
+        "DefinitionString": Object {
+          "Fn::Join": Array [
+            "",
+            Array [
+              "{\\"StartAt\\":\\"LocateFailedExecutionsExp\\",\\"States\\":{\\"LocateFailedExecutionsExp\\":{\\"Next\\":\\"MapToCleanupsExp\\",\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::aws-sdk:cloudwatchlogs:startQuery\\",\\"Parameters\\":{\\"StartTime.$\\":\\"$$.Execution.StartTime\\",\\"EndTime.$\\":\\"$$.Execution.StartTime\\",\\"QueryString\\":\\"fields details.input, @timestamp, @message, @logStream\\\\n                      | filter id = '1'\\\\n                      | parse details.input /\\\\\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID\\\\\\":\\\\\\"(?<semaphoreUseExecutionArn>.*?)\\\\\\"/\\\\n                      | parse details.input /\\\\\\"name\\\\\\":\\\\\\"(?<semaphoreName>.*?)\\\\\\"/\\\\n                      | parse details.input /\\\\\\"userId\\\\\\":\\\\\\"(?<semaphoreUserId>.*?)\\\\\\"/\\\\n                      | filter semaphoreUseExecutionArn = '\\\\\\"$$.Execution.Input.detail.executionArn\\\\\\"'\\\\n                      | display semaphoreUseExecutionArn, semaphoreName, semaphoreUserId\\"}},\\"MapToCleanupsExp\\":{\\"Type\\":\\"Map\\",\\"End\\":true,\\"Iterator\\":{\\"StartAt\\":\\"ParseOriginalInputExp\\",\\"States\\":{\\"ParseOriginalInputExp\\":{\\"Type\\":\\"Pass\\",\\"Parameters\\":{\\"OriginalInput.$\\":\\"States.StringToJson($$.Execution.Input.detail.input)\\"},\\"OutputPath\\":\\"$.OriginalInput\\",\\"Next\\":\\"GetSemaphoreUse\\"},\\"GetSemaphoreUse\\":{\\"Next\\":\\"CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the semaphore item.\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ProjectionExpression\\":\\"#semaphoreUserId\\"}},\\"CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"PrepareInput\\"}],\\"Default\\":\\"SemaphoreUseNotFoundContinue\\"},\\"SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreReleased\\"},\\"TryToReleaseSemaphore\\":{\\"Next\\":\\"SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this semaphoreUserId is still there, then clean it up and release the semaphore\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#semaphoreUserId)\\",\\"ExpressionAttributeNames\\":{\\"#currentInUseCount\\":\\"CurrentInUseCount\\",\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId\\"}},\\"CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"TryToReleaseSemaphore\\"}],\\"Default\\":\\"SemaphoreUseNotFoundContinue\\"},\\"PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Parameters\\":{\\"Item.$\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)\\"},\\"Next\\":\\"CheckIfFoundSemaphoreUse\\"},\\"SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true}}},\\"ItemsPath\\":\\"$.logEvents[*].message\\"}}}",
+            ],
+          ],
+        },
+        "RoleArn": Object {
+          "Fn::GetAtt": Array [
+            "ExperimentalDistributedSemaphoreExperimentalStateMachineRoleB0FE216A",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "ExperimentalDistributedSemaphoreExperimentalStateMachineEventsRoleDefaultPolicyFB72E683": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Ref": "ExperimentalDistributedSemaphoreExperimentalStateMachineD05D6C2E",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ExperimentalDistributedSemaphoreExperimentalStateMachineEventsRoleDefaultPolicyFB72E683",
+        "Roles": Array [
+          Object {
+            "Ref": "ExperimentalDistributedSemaphoreExperimentalStateMachineEventsRoleE77D2747",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ExperimentalDistributedSemaphoreExperimentalStateMachineEventsRoleE77D2747": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": "events.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ExperimentalDistributedSemaphoreExperimentalStateMachineRoleB0FE216A": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": Object {
+                  "Fn::FindInMap": Array [
+                    "ServiceprincipalMap",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    "states",
+                  ],
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ExperimentalDistributedSemaphoreExperimentalStateMachineRoleDefaultPolicy11247B44": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "cloudwatchlogs:startQuery",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::GetAtt": Array [
+                  "AcquireSemaphoreLogGroupF74DE39B",
+                  "Arn",
+                ],
+              },
+            },
+            Object {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ExperimentalDistributedSemaphoreExperimentalStateMachineRoleDefaultPolicy11247B44",
+        "Roles": Array [
+          Object {
+            "Ref": "ExperimentalDistributedSemaphoreExperimentalStateMachineRoleB0FE216A",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621": Object {
+      "DependsOn": Array [
+        "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachineRoleDefaultPolicyA56375B5",
+        "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachineRole2C96F375",
+      ],
+      "Properties": Object {
+        "DefinitionString": Object {
+          "Fn::Join": Array [
+            "",
+            Array [
+              "{\\"StartAt\\":\\"TryToReleaseSemaphore\\",\\"States\\":{\\"TryToReleaseSemaphore\\":{\\"Next\\":\\"SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":5,\\"BackoffRate\\":1.5}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this semaphoreUserId is still there, then clean it up and release the semaphore\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#semaphoreUserId)\\",\\"ExpressionAttributeNames\\":{\\"#currentInUseCount\\":\\"CurrentInUseCount\\",\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId\\"}},\\"SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true},\\"SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreReleased\\"}}}",
+            ],
+          ],
+        },
+        "RoleArn": Object {
+          "Fn::GetAtt": Array [
+            "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachineRole2C96F375",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachineRole2C96F375": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": Object {
+                  "Fn::FindInMap": Array [
+                    "ServiceprincipalMap",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    "states",
+                  ],
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachineRoleDefaultPolicyA56375B5": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "dynamodb:UpdateItem",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachineRoleDefaultPolicyA56375B5",
+        "Roles": Array [
+          Object {
+            "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachineRole2C96F375",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ExperimentalDistributedSemaphoreRunForIncomplete00527C10B": Object {
+      "Properties": Object {
+        "EventPattern": Object {
+          "detail": Object {
+            "stateMachineArn": Array [
+              Object {
+                "Ref": "SemaphoreE4816963",
+              },
+            ],
+            "status": Array [
+              "FAILED",
+              "TIMED_OUT",
+              "ABORTED",
+            ],
+          },
+          "source": Array [
+            "aws.states",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": Array [
+          Object {
+            "Arn": Object {
+              "Ref": "ExperimentalDistributedSemaphoreExperimentalStateMachineD05D6C2E",
+            },
+            "Id": "Target0",
+            "RoleArn": Object {
+              "Fn::GetAtt": Array [
+                "ExperimentalDistributedSemaphoreExperimentalStateMachineEventsRoleE77D2747",
+                "Arn",
+              ],
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "ExperimentalDistributedSemaphoreRunForIncomplete7671BAAA": Object {
+      "Properties": Object {
+        "EventPattern": Object {
+          "detail": Object {
+            "stateMachineArn": Array [
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968",
+              },
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+              },
+            ],
+            "status": Array [
+              "FAILED",
+              "TIMED_OUT",
+              "ABORTED",
+            ],
+          },
+          "source": Array [
+            "aws.states",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": Array [
+          Object {
+            "Arn": Object {
+              "Ref": "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineF1B186E2",
+            },
+            "Id": "Target0",
+            "RoleArn": Object {
+              "Fn::GetAtt": Array [
+                "ExperimentalDistributedSemaphoreCleanupSemaphoreStateMachineEventsRoleEC44E020",
+                "Arn",
+              ],
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "ExperimentalDistributedSemaphoreSemaphoreTable5061E420": Object {
+      "DeletionPolicy": "Retain",
+      "Properties": Object {
+        "AttributeDefinitions": Array [
+          Object {
+            "AttributeName": "SemaphoreName",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "ContributorInsightsSpecification": Object {
+          "Enabled": true,
+        },
+        "KeySchema": Array [
+          Object {
+            "AttributeName": "SemaphoreName",
+            "KeyType": "HASH",
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Retain",
+    },
+    "SemaphoreE4816963": Object {
+      "DependsOn": Array [
+        "SemaphoreRoleDefaultPolicy3FABCD2F",
+        "SemaphoreRole7E0FA103",
+      ],
+      "Properties": Object {
+        "DefinitionString": Object {
+          "Fn::Join": Array [
+            "",
+            Array [
+              "{\\"StartAt\\":\\"AcquireViaStartExecutionFragment0\\",\\"States\\":{\\"AcquireViaStartExecutionFragment0\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"DoSomething\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireViaStartExecutionFragment0: AcquireSemaphoreViaStartExecution\\",\\"States\\":{\\"AcquireViaStartExecutionFragment0: AcquireSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"DefaultSemaphore\\",\\"limit\\":\\"5\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968",
+              },
+              "\\"}}}}]},\\"DoSomething\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseViaStartExecutionFragment1\\"},\\"ReleaseViaStartExecutionFragment1\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AcquireViaStartExecutionFragment2\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseViaStartExecutionFragment1: ReleaseSemaphoreViaStartExecution\\",\\"States\\":{\\"ReleaseViaStartExecutionFragment1: ReleaseSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"DefaultSemaphore\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+              },
+              "\\"}}}}]},\\"AcquireViaStartExecutionFragment2\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"DoNothing\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireViaStartExecutionFragment2: AcquireSemaphoreViaStartExecution\\",\\"States\\":{\\"AcquireViaStartExecutionFragment2: AcquireSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"limit.$\\":\\"$.limit\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968",
+              },
+              "\\"}}}}]},\\"DoNothing\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseViaStartExecutionFragment3\\"},\\"ReleaseViaStartExecutionFragment3\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AcquireViaStartExecutionFragment4\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseViaStartExecutionFragment3: ReleaseSemaphoreViaStartExecution\\",\\"States\\":{\\"ReleaseViaStartExecutionFragment3: ReleaseSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+              },
+              "\\"}}}}]},\\"AcquireViaStartExecutionFragment4\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AllGood\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireViaStartExecutionFragment4: AcquireSemaphoreViaStartExecution\\",\\"States\\":{\\"AcquireViaStartExecutionFragment4: AcquireSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"NotDefaultName\\",\\"limit\\":\\"7\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968",
+              },
+              "\\"}}}}]},\\"AllGood\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseViaStartExecutionFragment5\\"},\\"ReleaseViaStartExecutionFragment5\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"AcquireViaStartExecutionFragment6\\",\\"Branches\\":[{\\"StartAt\\":\\"ReleaseViaStartExecutionFragment5: ReleaseSemaphoreViaStartExecution\\",\\"States\\":{\\"ReleaseViaStartExecutionFragment5: ReleaseSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name\\":\\"NotDefaultName\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+              },
+              "\\"}}}}]},\\"AcquireViaStartExecutionFragment6\\":{\\"Type\\":\\"Parallel\\",\\"Next\\":\\"ItWorks\\",\\"Branches\\":[{\\"StartAt\\":\\"AcquireViaStartExecutionFragment6: AcquireSemaphoreViaStartExecution\\",\\"States\\":{\\"AcquireViaStartExecutionFragment6: AcquireSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"limit.$\\":\\"$.limit\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"nextTryWaitTime\\":\\"3\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968",
+              },
+              "\\"}}}}]},\\"ItWorks\\":{\\"Type\\":\\"Pass\\",\\"Next\\":\\"ReleaseViaStartExecutionFragment7\\"},\\"ReleaseViaStartExecutionFragment7\\":{\\"Type\\":\\"Parallel\\",\\"End\\":true,\\"Branches\\":[{\\"StartAt\\":\\"ReleaseViaStartExecutionFragment7: ReleaseSemaphoreViaStartExecution\\",\\"States\\":{\\"ReleaseViaStartExecutionFragment7: ReleaseSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"States.Format('{}-{}-getCall', $.accountId, $.region)\\",\\"userId.$\\":\\"$$.Execution.Id\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+              },
+              "\\"}}}}]}}}",
+            ],
+          ],
+        },
+        "RoleArn": Object {
+          "Fn::GetAtt": Array [
+            "SemaphoreRole7E0FA103",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+    },
+    "SemaphoreRole7E0FA103": Object {
+      "Properties": Object {
+        "AssumeRolePolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": Object {
+                "Service": Object {
+                  "Fn::FindInMap": Array [
+                    "ServiceprincipalMap",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    "states",
+                  ],
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "SemaphoreRoleDefaultPolicy3FABCD2F": Object {
+      "Properties": Object {
+        "PolicyDocument": Object {
+          "Statement": Array [
+            Object {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+              },
+            },
+            Object {
+              "Action": Array [
+                "states:DescribeExecution",
+                "states:StopExecution",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":states:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":execution:",
+                    Object {
+                      "Fn::Select": Array [
+                        6,
+                        Object {
+                          "Fn::Split": Array [
+                            ":",
+                            Object {
+                              "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    "*",
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": Array [
+                "events:PutTargets",
+                "events:PutRule",
+                "events:DescribeRule",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":events:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":rule/StepFunctionsGetEventsForStepFunctionsExecutionRule",
+                  ],
+                ],
+              },
+            },
+            Object {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": Object {
+                "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968",
+              },
+            },
+            Object {
+              "Action": Array [
+                "states:DescribeExecution",
+                "states:StopExecution",
+              ],
+              "Effect": "Allow",
+              "Resource": Object {
+                "Fn::Join": Array [
+                  "",
+                  Array [
+                    "arn:",
+                    Object {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":states:",
+                    Object {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    Object {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":execution:",
+                    Object {
+                      "Fn::Select": Array [
+                        6,
+                        Object {
+                          "Fn::Split": Array [
+                            ":",
+                            Object {
+                              "Ref": "ExperimentalDistributedSemaphoreAcquireSemaphoreStateMachineEC6C2968",
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    "*",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "SemaphoreRoleDefaultPolicy3FABCD2F",
+        "Roles": Array [
+          Object {
+            "Ref": "SemaphoreRole7E0FA103",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+  },
+  "Rules": Object {
+    "CheckBootstrapVersion": Object {
+      "Assertions": Array [
+        Object {
+          "Assert": Object {
+            "Fn::Not": Array [
+              Object {
+                "Fn::Contains": Array [
+                  Array [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  Object {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;

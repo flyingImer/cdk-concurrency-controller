@@ -29,6 +29,9 @@ export interface DistributedSemaphoreProps {
 export class DistributedSemaphore extends Construct {
   public readonly semaphoreTable: SemaphoreTableDefinition;
 
+  protected readonly acquireSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
+  protected readonly cleanupSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
+
   private readonly defaultSemaphoreName: string;
   private readonly semaphoreMap = new Map<string, SemaphoreDefinition>();
   private readonly defaultSemaphoreUseDefinition: SemaphoreUseDefinition;
@@ -82,6 +85,9 @@ export class DistributedSemaphore extends Construct {
       definition: this.__buildCleanupDefinition(),
       ...cleanupStateMachineProps,
     });
+
+    this.acquireSemaphoreStateMachineProps = acquireSemaphoreStateMachineProps;
+    this.cleanupSemaphoreStateMachineProps = cleanupStateMachineProps;
 
     new Rule(this, 'RunForIncomplete', {
       targets: [new SfnStateMachine(this.cleanupStateMachine)],
