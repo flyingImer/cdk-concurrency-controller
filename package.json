@@ -38,7 +38,7 @@
     "organization": false
   },
   "devDependencies": {
-    "@aws-cdk/aws-lambda-python-alpha": "^2.17.0-alpha.0",
+    "@aws-cdk/aws-lambda-python-alpha": "^2.18.0-alpha.0",
     "@types/jest": "^27.4.1",
     "@types/node": "^12",
     "@typescript-eslint/eslint-plugin": "^5",
