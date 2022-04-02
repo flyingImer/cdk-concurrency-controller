@@ -95,6 +95,16 @@ class TestStack extends Stack {
         new LambdaInvoke(this, 'DoWork2', doWorkProps),
       ).next(
         dsn.release({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
+      ).next(
+        dsn.acquire().toSingleState({ resultPath: JsonPath.DISCARD }),
+      ).next(
+        dsn.acquire({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
+      ).next(
+        new LambdaInvoke(this, 'DoWork3', doWorkProps),
+      ).next(
+        dsn.release({ name: aSemaphoreName, userId: JsonPath.stringAt('$$.Execution.Id') }).toSingleState({ resultPath: JsonPath.DISCARD }),
+      ).next(
+        dsn.release().toSingleState({ resultPath: JsonPath.DISCARD }),
       ),
       tracingEnabled: true,
       logs: {
