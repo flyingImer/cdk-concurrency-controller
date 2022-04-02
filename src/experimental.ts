@@ -129,6 +129,7 @@ export class ExperimentalDistributedSemaphore extends DistributedSemaphore {
         resultPath: queryResultsPathPrefix, // merge service integration result into context
       }),
     ).next(
+      // TODO: need to check if JsonPath.stringAt(`${queryResultsPathPrefix}.Results`) is an empty array, meaning CW logs insights delayed
       new Map(this, `MapToCleanups${disambiguator}`, {
         // TODO: allow max concurrency control via props?
         itemsPath: JsonPath.stringAt(`${queryResultsPathPrefix}.Results`),
