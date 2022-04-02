@@ -31,12 +31,12 @@ export class DistributedSemaphore extends Construct {
 
   protected readonly acquireSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
   protected readonly cleanupSemaphoreStateMachineProps?: SemaphoreStateMachineProps;
+  protected readonly releaseStateMachine: StateMachine;
 
   private readonly defaultSemaphoreName: string;
   private readonly semaphoreMap = new Map<string, SemaphoreDefinition>();
   private readonly defaultSemaphoreUseDefinition: SemaphoreUseDefinition;
   private readonly acquireStateMachine: StateMachine;
-  private readonly releaseStateMachine: StateMachine;
   private readonly cleanupStateMachine: StateMachine;
 
   private count = 0;

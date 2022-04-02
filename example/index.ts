@@ -7,7 +7,7 @@ import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { TaskInput, JsonPath, StateMachine, LogLevel, Pass, IChainable, Map, Errors, IntegrationPattern, IStateMachine, Result } from 'aws-cdk-lib/aws-stepfunctions';
 import { LambdaInvoke, StepFunctionsStartExecution } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Construct } from 'constructs';
-import { DistributedSemaphore as DS } from '../src/semaphore';
+import { ExperimentalDistributedSemaphore as DS } from '../src/experimental';
 
 class TestStack extends Stack {
   constructor(scope: Construct, id: string, props: StackProps = {}) {
@@ -106,6 +106,7 @@ class TestStack extends Stack {
         level: LogLevel.ALL,
       },
     });
+    dsn.listen(semaphore);
 
     new StateMachine(this, 'SemaphoreTesting', {
       definition: this.buildTesting(10, semaphore),
