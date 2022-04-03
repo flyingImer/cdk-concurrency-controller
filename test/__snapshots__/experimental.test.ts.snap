@@ -73,10 +73,83 @@ Object {
       "Iterator": Object {
         "StartAt": "ParseReleaseInputSnapshot",
         "States": Object {
+          "CheckIfFoundSemaphore": Object {
+            "Choices": Array [
+              Object {
+                "IsPresent": true,
+                "Next": "PrepareInput",
+                "Variable": "$.semaphoreInfo.currentSemaphoreUse.Item",
+              },
+            ],
+            "Comment": null,
+            "Default": "SemaphoreUseNotFoundContinue",
+            "InputPath": null,
+            "OutputPath": null,
+            "Parameters": null,
+            "Type": "Choice",
+          },
+          "CheckIfFoundSemaphoreUse": Object {
+            "Choices": Array [
+              Object {
+                "And": Array [
+                  Object {
+                    "IsPresent": true,
+                    "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+                  },
+                  Object {
+                    "StringMatches": "*Z*",
+                    "Variable": "$.semaphoreInfo.currentSemaphoreUse.ItemString",
+                  },
+                ],
+                "Next": "TryToReleaseSemaphore",
+              },
+            ],
+            "Comment": "This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.",
+            "Default": "SemaphoreUseNotFoundContinue",
+            "InputPath": null,
+            "OutputPath": null,
+            "Parameters": null,
+            "Type": "Choice",
+          },
+          "GetSemaphoreUse": Object {
+            "Catch": null,
+            "Comment": "Get info from DDB for the semaphore item.",
+            "HeartbeatSeconds": null,
+            "InputPath": null,
+            "Next": "CheckIfFoundSemaphore",
+            "OutputPath": null,
+            "Parameters": Object {
+              "ConsistentRead": true,
+              "ExpressionAttributeNames": Object {
+                "#semaphoreUserId.$": "$.userId",
+              },
+              "Key": Object {
+                "SemaphoreName": Object {
+                  "S.$": "$.name",
+                },
+              },
+              "ProjectionExpression": "#semaphoreUserId",
+              "TableName": "\${Token[NORMALIZED_ID]}",
+            },
+            "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:getItem",
+            "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+            "Retry": Array [
+              Object {
+                "BackoffRate": 2,
+                "ErrorEquals": Array [
+                  "States.ALL",
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+              },
+            ],
+            "TimeoutSeconds": null,
+            "Type": "Task",
+          },
           "ParseReleaseInputSnapshot": Object {
             "Comment": null,
             "InputPath": null,
-            "Next": "ReleaseSemaphoreViaStartExecution",
+            "Next": "GetSemaphoreUse",
             "OutputPath": null,
             "Parameters": Object {
               "name.$": "$.resultValue[0].Value",
@@ -86,24 +159,94 @@ Object {
             "ResultPath": null,
             "Type": "Pass",
           },
-          "ReleaseSemaphoreViaStartExecution": Object {
-            "Catch": null,
+          "PrepareInput": Object {
             "Comment": null,
-            "End": true,
-            "HeartbeatSeconds": null,
             "InputPath": null,
+            "Next": "CheckIfFoundSemaphoreUse",
             "OutputPath": null,
             "Parameters": Object {
-              "Input": Object {
-                "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
-                "name.$": "$.name",
-                "userId.$": "$.userId",
-              },
-              "StateMachineArn": "\${Token[NORMALIZED_ID]}",
+              "Item.$": "$.semaphoreInfo.currentSemaphoreUse.Item",
+              "ItemString.$": "States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)",
             },
-            "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::states:startExecution.sync:2",
+            "Result": null,
+            "ResultPath": "$.semaphoreInfo.currentSemaphoreUse",
+            "Type": "Pass",
+          },
+          "SemaphoreReleased": Object {
+            "Comment": null,
+            "End": true,
+            "InputPath": null,
+            "OutputPath": null,
+            "Parameters": null,
+            "Result": null,
             "ResultPath": null,
-            "Retry": null,
+            "Type": "Pass",
+          },
+          "SemaphoreUseNotFoundContinue": Object {
+            "Comment": null,
+            "InputPath": null,
+            "Next": "SemaphoreReleased",
+            "OutputPath": null,
+            "Parameters": null,
+            "Result": null,
+            "ResultPath": null,
+            "Type": "Pass",
+          },
+          "TryToReleaseSemaphore": Object {
+            "Catch": Array [
+              Object {
+                "ErrorEquals": Array [
+                  "DynamoDB.ConditionalCheckFailedException",
+                ],
+                "Next": "SemaphoreUseNotFoundContinue",
+                "ResultPath": null,
+              },
+            ],
+            "Comment": "If this semaphoreUserId is still there, then clean it up and release the semaphore",
+            "HeartbeatSeconds": null,
+            "InputPath": null,
+            "Next": "SemaphoreReleased",
+            "OutputPath": null,
+            "Parameters": Object {
+              "ConditionExpression": "attribute_exists(#semaphoreUserId)",
+              "ExpressionAttributeNames": Object {
+                "#currentInUseCount": "CurrentInUseCount",
+                "#semaphoreUserId.$": "$.userId",
+              },
+              "ExpressionAttributeValues": Object {
+                ":decrease": Object {
+                  "N": "1",
+                },
+              },
+              "Key": Object {
+                "SemaphoreName": Object {
+                  "S.$": "$.name",
+                },
+              },
+              "ReturnValues": "UPDATED_NEW",
+              "TableName": "\${Token[NORMALIZED_ID]}",
+              "UpdateExpression": "SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId",
+            },
+            "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
+            "ResultPath": null,
+            "Retry": Array [
+              Object {
+                "BackoffRate": null,
+                "ErrorEquals": Array [
+                  "DynamoDB.ConditionalCheckFailedException",
+                ],
+                "IntervalSeconds": null,
+                "MaxAttempts": 0,
+              },
+              Object {
+                "BackoffRate": 1.4,
+                "ErrorEquals": Array [
+                  "States.ALL",
+                ],
+                "IntervalSeconds": 5,
+                "MaxAttempts": 20,
+              },
+            ],
             "TimeoutSeconds": null,
             "Type": "Task",
           },
@@ -724,15 +867,23 @@ Object {
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::aws-sdk:cloudwatchlogs:getQueryResults\\",\\"Parameters\\":{\\"QueryId.$\\":\\"$.Context.StartQueryOutput.QueryId\\"}},\\"MapToCleanupsExp\\":{\\"Type\\":\\"Map\\",\\"End\\":true,\\"Parameters\\":{\\"resultIndex.$\\":\\"$$.Map.Item.Index\\",\\"resultValue.$\\":\\"$$.Map.Item.Value\\"},\\"Iterator\\":{\\"StartAt\\":\\"ParseReleaseInputExp\\",\\"States\\":{\\"ParseReleaseInputExp\\":{\\"Type\\":\\"Pass\\",\\"Parameters\\":{\\"name.$\\":\\"$.resultValue[0].Value\\",\\"userId.$\\":\\"$.resultValue[1].Value\\"},\\"Next\\":\\"ReleaseSemaphoreViaStartExecution\\"},\\"ReleaseSemaphoreViaStartExecution\\":{\\"End\\":true,\\"Type\\":\\"Task\\",\\"Resource\\":\\"arn:",
+              ":states:::aws-sdk:cloudwatchlogs:getQueryResults\\",\\"Parameters\\":{\\"QueryId.$\\":\\"$.Context.StartQueryOutput.QueryId\\"}},\\"MapToCleanupsExp\\":{\\"Type\\":\\"Map\\",\\"End\\":true,\\"Parameters\\":{\\"resultIndex.$\\":\\"$$.Map.Item.Index\\",\\"resultValue.$\\":\\"$$.Map.Item.Value\\"},\\"Iterator\\":{\\"StartAt\\":\\"ParseReleaseInputExp\\",\\"States\\":{\\"ParseReleaseInputExp\\":{\\"Type\\":\\"Pass\\",\\"Parameters\\":{\\"name.$\\":\\"$.resultValue[0].Value\\",\\"userId.$\\":\\"$.resultValue[1].Value\\"},\\"Next\\":\\"GetSemaphoreUse\\"},\\"GetSemaphoreUse\\":{\\"Next\\":\\"CheckIfFoundSemaphore\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":1,\\"MaxAttempts\\":3,\\"BackoffRate\\":2}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"Get info from DDB for the semaphore item.\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Resource\\":\\"arn:",
               Object {
                 "Ref": "AWS::Partition",
               },
-              ":states:::states:startExecution.sync:2\\",\\"Parameters\\":{\\"Input\\":{\\"name.$\\":\\"$.name\\",\\"userId.$\\":\\"$.userId\\",\\"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\\":\\"$$.Execution.Id\\"},\\"StateMachineArn\\":\\"",
+              ":states:::dynamodb:getItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
               Object {
-                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
               },
-              "\\"}}}},\\"ItemsPath\\":\\"$.Context.GetQueryResultsOutput.Results\\"}}}",
+              "\\",\\"ConsistentRead\\":true,\\"ExpressionAttributeNames\\":{\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ProjectionExpression\\":\\"#semaphoreUserId\\"}},\\"CheckIfFoundSemaphore\\":{\\"Type\\":\\"Choice\\",\\"Choices\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"IsPresent\\":true,\\"Next\\":\\"PrepareInput\\"}],\\"Default\\":\\"SemaphoreUseNotFoundContinue\\"},\\"SemaphoreUseNotFoundContinue\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreReleased\\"},\\"TryToReleaseSemaphore\\":{\\"Next\\":\\"SemaphoreReleased\\",\\"Retry\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"MaxAttempts\\":0},{\\"ErrorEquals\\":[\\"States.ALL\\"],\\"IntervalSeconds\\":5,\\"MaxAttempts\\":20,\\"BackoffRate\\":1.4}],\\"Catch\\":[{\\"ErrorEquals\\":[\\"DynamoDB.ConditionalCheckFailedException\\"],\\"ResultPath\\":null,\\"Next\\":\\"SemaphoreUseNotFoundContinue\\"}],\\"Type\\":\\"Task\\",\\"Comment\\":\\"If this semaphoreUserId is still there, then clean it up and release the semaphore\\",\\"ResultPath\\":null,\\"Resource\\":\\"arn:",
+              Object {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:updateItem\\",\\"Parameters\\":{\\"Key\\":{\\"SemaphoreName\\":{\\"S.$\\":\\"$.name\\"}},\\"TableName\\":\\"",
+              Object {
+                "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+              },
+              "\\",\\"ConditionExpression\\":\\"attribute_exists(#semaphoreUserId)\\",\\"ExpressionAttributeNames\\":{\\"#currentInUseCount\\":\\"CurrentInUseCount\\",\\"#semaphoreUserId.$\\":\\"$.userId\\"},\\"ExpressionAttributeValues\\":{\\":decrease\\":{\\"N\\":\\"1\\"}},\\"ReturnValues\\":\\"UPDATED_NEW\\",\\"UpdateExpression\\":\\"SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId\\"}},\\"CheckIfFoundSemaphoreUse\\":{\\"Type\\":\\"Choice\\",\\"Comment\\":\\"This state checks to see if the semaphore user already holds a semaphore. It can tell that by looking for Z, which will be indicative of the timestamp value. That will only be there in the stringified version of the data returned from DDB if this execution holds a semaphore.\\",\\"Choices\\":[{\\"And\\":[{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"IsPresent\\":true},{\\"Variable\\":\\"$.semaphoreInfo.currentSemaphoreUse.ItemString\\",\\"StringMatches\\":\\"*Z*\\"}],\\"Next\\":\\"TryToReleaseSemaphore\\"}],\\"Default\\":\\"SemaphoreUseNotFoundContinue\\"},\\"PrepareInput\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":\\"$.semaphoreInfo.currentSemaphoreUse\\",\\"Parameters\\":{\\"Item.$\\":\\"$.semaphoreInfo.currentSemaphoreUse.Item\\",\\"ItemString.$\\":\\"States.JsonToString($.semaphoreInfo.currentSemaphoreUse.Item)\\"},\\"Next\\":\\"CheckIfFoundSemaphoreUse\\"},\\"SemaphoreReleased\\":{\\"Type\\":\\"Pass\\",\\"ResultPath\\":null,\\"End\\":true}}},\\"ItemsPath\\":\\"$.Context.GetQueryResultsOutput.Results\\"}}}",
             ],
           ],
         },
@@ -840,17 +991,7 @@ Object {
               "Resource": "*",
             },
             Object {
-              "Action": "states:StartExecution",
-              "Effect": "Allow",
-              "Resource": Object {
-                "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
-              },
-            },
-            Object {
-              "Action": Array [
-                "states:DescribeExecution",
-                "states:StopExecution",
-              ],
+              "Action": "dynamodb:GetItem",
               "Effect": "Allow",
               "Resource": Object {
                 "Fn::Join": Array [
@@ -860,7 +1001,7 @@ Object {
                     Object {
                       "Ref": "AWS::Partition",
                     },
-                    ":states:",
+                    ":dynamodb:",
                     Object {
                       "Ref": "AWS::Region",
                     },
@@ -868,31 +1009,16 @@ Object {
                     Object {
                       "Ref": "AWS::AccountId",
                     },
-                    ":execution:",
+                    ":table/",
                     Object {
-                      "Fn::Select": Array [
-                        6,
-                        Object {
-                          "Fn::Split": Array [
-                            ":",
-                            Object {
-                              "Ref": "ExperimentalDistributedSemaphoreReleaseSemaphoreStateMachine8F788621",
-                            },
-                          ],
-                        },
-                      ],
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
                     },
-                    "*",
                   ],
                 ],
               },
             },
             Object {
-              "Action": Array [
-                "events:PutTargets",
-                "events:PutRule",
-                "events:DescribeRule",
-              ],
+              "Action": "dynamodb:UpdateItem",
               "Effect": "Allow",
               "Resource": Object {
                 "Fn::Join": Array [
@@ -902,7 +1028,7 @@ Object {
                     Object {
                       "Ref": "AWS::Partition",
                     },
-                    ":events:",
+                    ":dynamodb:",
                     Object {
                       "Ref": "AWS::Region",
                     },
@@ -910,7 +1036,10 @@ Object {
                     Object {
                       "Ref": "AWS::AccountId",
                     },
-                    ":rule/StepFunctionsGetEventsForStepFunctionsExecutionRule",
+                    ":table/",
+                    Object {
+                      "Ref": "ExperimentalDistributedSemaphoreSemaphoreTable5061E420",
+                    },
                   ],
                 ],
               },

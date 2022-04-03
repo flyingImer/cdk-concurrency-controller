@@ -5,7 +5,7 @@ import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { IChainable, IStateMachine, JsonPath, LogLevel, Map, Pass, StateMachine, Wait, WaitTime } from 'aws-cdk-lib/aws-stepfunctions';
 import { CallAwsService, EvaluateExpression } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Construct } from 'constructs';
-import { ReleaseViaStartExecutionFragment } from './fragments';
+import { ReleaseSemaphoreFragment } from './fragments';
 import { DistributedSemaphore, DistributedSemaphoreProps } from './semaphore';
 
 /**
@@ -144,12 +144,15 @@ export class ExperimentalDistributedSemaphore extends DistributedSemaphore {
             userId: JsonPath.stringAt('$.resultValue[1].Value'),
           },
         }).next(
-          // TODO: ideally, should checkSemaphoreUseFirst
-          new ReleaseViaStartExecutionFragment(this, `ExperimentalViaStartExecutionFragment${disambiguator}`, {
-            stateMachine: this.releaseStateMachine,
-            input: {
-              name: JsonPath.stringAt('$.name'),
-              userId: JsonPath.stringAt('$.userId'),
+          new ReleaseSemaphoreFragment(this, `ExperimentalCleanupSemaphoreFragment${disambiguator}`, {
+            name: JsonPath.stringAt('$.name'),
+            userId: JsonPath.stringAt('$.userId'),
+            semaphoreTable: this.semaphoreTable,
+            checkSemaphoreUseFirst: true,
+            retryStrategy: {
+              interval: Duration.seconds(5),
+              maxAttempts: 20,
+              backoffRate: 1.4,
             },
           }),
         ),
