@@ -38,12 +38,12 @@
     "organization": false
   },
   "devDependencies": {
-    "@aws-cdk/aws-lambda-python-alpha": "^2.44.0-alpha.0",
+    "@aws-cdk/aws-lambda-python-alpha": "^2.45.0-alpha.0",
     "@types/jest": "^27.5.2",
     "@types/node": "^12",
     "@typescript-eslint/eslint-plugin": "^5",
     "@typescript-eslint/parser": "^5",
-    "all-contributors-cli": "^6.23.0",
+    "all-contributors-cli": "^6.23.1",
     "aws-cdk-lib": "2.10.0",
     "constructs": "10.0.5",
     "eslint": "^8",
