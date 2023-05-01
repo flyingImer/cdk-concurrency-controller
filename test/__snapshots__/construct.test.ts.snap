@@ -46,6 +46,7 @@ Object {
       "Catch": null,
       "Comment": "Get info from DDB for the semaphore item.",
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "Next": "CheckIfFoundSemaphore",
       "OutputPath": null,
@@ -75,6 +76,7 @@ Object {
         },
       ],
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
     "InitializeSemaphore": Object {
@@ -84,11 +86,12 @@ Object {
             "States.ALL",
           ],
           "Next": "TryToAcquireSemaphore",
-          "ResultPath": null,
+          "ResultPath": "\${Token[NORMALIZED_ID]}",
         },
       ],
       "Comment": "This state handles the case where an item hasn't been created for this semaphore yet. In that case, it will insert an initial item that includes the semaphore name as the key and CurrentInUseCount of 0. The Put to DynamoDB includes a conditional expression to fail if the an item with that key already exists, which avoids a race condition if multiple executions start at the same time. There are other reasons that the previous state could fail and end up here, so this is safe in those cases too.",
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "Next": "TryToAcquireSemaphore",
       "OutputPath": null,
@@ -110,9 +113,10 @@ Object {
         "TableName": "\${Token[NORMALIZED_ID]}",
       },
       "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:putItem",
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Retry": null,
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
     "PrepareInput": Object {
@@ -135,7 +139,7 @@ Object {
       "OutputPath": null,
       "Parameters": null,
       "Result": null,
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Type": "Pass",
     },
     "SemaphoreAcquisitionConfirmedContinue": Object {
@@ -145,7 +149,7 @@ Object {
       "OutputPath": null,
       "Parameters": null,
       "Result": null,
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Type": "Pass",
     },
     "TryToAcquireSemaphore": Object {
@@ -167,6 +171,7 @@ Object {
       ],
       "Comment": "Try to acquire a semaphore using a conditional update to DynamoDB. This update will do two things: 1) increment a counter for the number of held semaphores and 2) add an attribute to the DynamoDB Item with a unique key for this execution and with a value of the time when the semaphore was Acquired. The Update includes a conditional expression that will fail under two circumstances: 1) if the maximum number of semaphores have already been distributed or 2) if the current execution already owns a semaphore. The latter check is important to ensure the same execution doesn't increase the counter more than once. If either of these conditions are not met, then the task will fail with a DynamoDB.ConditionalCheckFailedException error, retry a few times, then if it is still not successful, it will move off to another branch of the workflow. If this is the first time that a given semaphoreName has been used, there will not be a row in DynamoDB, so the update will fail with DynamoDB.AmazonDynamoDBException. In that case, this state sends the workflow to state that will create that row to initialize.",
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "Next": "SemaphoreAcquired",
       "OutputPath": null,
@@ -197,7 +202,7 @@ Object {
         "UpdateExpression": "SET #currentInUseCount = #currentInUseCount + :increase, #semaphoreUserId = :semaphoreUseAcquiredTime",
       },
       "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Retry": Array [
         Object {
           "BackoffRate": null,
@@ -217,6 +222,7 @@ Object {
         },
       ],
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
     "WaitToAcquireSemaphore": Object {
@@ -239,6 +245,7 @@ Object {
       "Comment": null,
       "End": true,
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "OutputPath": null,
       "Parameters": Object {
@@ -255,6 +262,7 @@ Object {
       "ResultPath": null,
       "Retry": null,
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
   },
@@ -308,6 +316,7 @@ Object {
       "Catch": null,
       "Comment": "Get info from DDB for the semaphore item.",
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "Next": "CheckIfFoundSemaphore",
       "OutputPath": null,
@@ -337,6 +346,7 @@ Object {
         },
       ],
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
     "ParseOriginalInputSnapshot": Object {
@@ -371,7 +381,7 @@ Object {
       "OutputPath": null,
       "Parameters": null,
       "Result": null,
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Type": "Pass",
     },
     "SemaphoreUseNotFoundContinue": Object {
@@ -381,7 +391,7 @@ Object {
       "OutputPath": null,
       "Parameters": null,
       "Result": null,
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Type": "Pass",
     },
     "TryToReleaseSemaphore": Object {
@@ -391,11 +401,12 @@ Object {
             "DynamoDB.ConditionalCheckFailedException",
           ],
           "Next": "SemaphoreUseNotFoundContinue",
-          "ResultPath": null,
+          "ResultPath": "\${Token[NORMALIZED_ID]}",
         },
       ],
       "Comment": "If this semaphoreUserId is still there, then clean it up and release the semaphore",
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "Next": "SemaphoreReleased",
       "OutputPath": null,
@@ -420,7 +431,7 @@ Object {
         "UpdateExpression": "SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId",
       },
       "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Retry": Array [
         Object {
           "BackoffRate": null,
@@ -440,6 +451,7 @@ Object {
         },
       ],
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
   },
@@ -458,7 +470,7 @@ Object {
       "OutputPath": null,
       "Parameters": null,
       "Result": null,
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Type": "Pass",
     },
     "SemaphoreUseNotFoundContinue": Object {
@@ -468,7 +480,7 @@ Object {
       "OutputPath": null,
       "Parameters": null,
       "Result": null,
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Type": "Pass",
     },
     "TryToReleaseSemaphore": Object {
@@ -478,11 +490,12 @@ Object {
             "DynamoDB.ConditionalCheckFailedException",
           ],
           "Next": "SemaphoreUseNotFoundContinue",
-          "ResultPath": null,
+          "ResultPath": "\${Token[NORMALIZED_ID]}",
         },
       ],
       "Comment": "If this semaphoreUserId is still there, then clean it up and release the semaphore",
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "Next": "SemaphoreReleased",
       "OutputPath": null,
@@ -507,7 +520,7 @@ Object {
         "UpdateExpression": "SET #currentInUseCount = #currentInUseCount - :decrease REMOVE #semaphoreUserId",
       },
       "Resource": "arn:\${Token[NORMALIZED_ID]}:states:::dynamodb:updateItem",
-      "ResultPath": null,
+      "ResultPath": "\${Token[NORMALIZED_ID]}",
       "Retry": Array [
         Object {
           "BackoffRate": null,
@@ -527,6 +540,7 @@ Object {
         },
       ],
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
   },
@@ -543,6 +557,7 @@ Object {
       "Comment": null,
       "End": true,
       "HeartbeatSeconds": null,
+      "HeartbeatSecondsPath": null,
       "InputPath": null,
       "OutputPath": null,
       "Parameters": Object {
@@ -557,6 +572,7 @@ Object {
       "ResultPath": null,
       "Retry": null,
       "TimeoutSeconds": null,
+      "TimeoutSecondsPath": null,
       "Type": "Task",
     },
   },
@@ -586,6 +602,9 @@ Object {
       "ap-south-1": Object {
         "states": "states.ap-south-1.amazonaws.com",
       },
+      "ap-south-2": Object {
+        "states": "states.ap-south-2.amazonaws.com",
+      },
       "ap-southeast-1": Object {
         "states": "states.ap-southeast-1.amazonaws.com",
       },
@@ -607,6 +626,9 @@ Object {
       "eu-central-1": Object {
         "states": "states.eu-central-1.amazonaws.com",
       },
+      "eu-central-2": Object {
+        "states": "states.eu-central-2.amazonaws.com",
+      },
       "eu-north-1": Object {
         "states": "states.eu-north-1.amazonaws.com",
       },
@@ -624,6 +646,9 @@ Object {
       },
       "eu-west-3": Object {
         "states": "states.eu-west-3.amazonaws.com",
+      },
+      "me-central-1": Object {
+        "states": "states.me-central-1.amazonaws.com",
       },
       "me-south-1": Object {
         "states": "states.me-south-1.amazonaws.com",
@@ -669,6 +694,7 @@ Object {
   },
   "Resources": Object {
     "DistributedSemaphoreAcquireSemaphoreStateMachine11CA7A20": Object {
+      "DeletionPolicy": "Delete",
       "DependsOn": Array [
         "DistributedSemaphoreAcquireSemaphoreStateMachineRoleDefaultPolicy8F27372C",
         "DistributedSemaphoreAcquireSemaphoreStateMachineRoleFCBD4625",
@@ -714,6 +740,7 @@ Object {
         },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
     },
     "DistributedSemaphoreAcquireSemaphoreStateMachineRoleDefaultPolicy8F27372C": Object {
       "Properties": Object {
@@ -838,6 +865,7 @@ Object {
       "Type": "AWS::IAM::Role",
     },
     "DistributedSemaphoreCleanupSemaphoreStateMachine74D1E441": Object {
+      "DeletionPolicy": "Delete",
       "DependsOn": Array [
         "DistributedSemaphoreCleanupSemaphoreStateMachineRoleDefaultPolicyD920CE03",
         "DistributedSemaphoreCleanupSemaphoreStateMachineRole2FB995B5",
@@ -875,6 +903,7 @@ Object {
         },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
     },
     "DistributedSemaphoreCleanupSemaphoreStateMachineEventsRole911C317B": Object {
       "Properties": Object {
@@ -1012,6 +1041,7 @@ Object {
       "Type": "AWS::IAM::Policy",
     },
     "DistributedSemaphoreReleaseSemaphoreStateMachine15A1EC10": Object {
+      "DeletionPolicy": "Delete",
       "DependsOn": Array [
         "DistributedSemaphoreReleaseSemaphoreStateMachineRoleDefaultPolicy6BAFBCEB",
         "DistributedSemaphoreReleaseSemaphoreStateMachineRole927C85D8",
@@ -1041,6 +1071,7 @@ Object {
         },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
     },
     "DistributedSemaphoreReleaseSemaphoreStateMachineRole927C85D8": Object {
       "Properties": Object {
@@ -1174,6 +1205,7 @@ Object {
       "UpdateReplacePolicy": "Retain",
     },
     "SemaphoreE4816963": Object {
+      "DeletionPolicy": "Delete",
       "DependsOn": Array [
         "SemaphoreRoleDefaultPolicy3FABCD2F",
         "SemaphoreRole7E0FA103",
@@ -1259,6 +1291,7 @@ Object {
         },
       },
       "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
     },
     "SemaphoreRole7E0FA103": Object {
       "Properties": Object {
