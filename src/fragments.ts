@@ -1,6 +1,6 @@
 import { Duration } from 'aws-cdk-lib';
 import { Attribute, AttributeType, ITable } from 'aws-cdk-lib/aws-dynamodb';
-import { Choice, Condition, Errors, IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, Pass, RetryProps, State, StateMachineFragment, TaskInput, Wait, WaitTime } from 'aws-cdk-lib/aws-stepfunctions';
+import { Choice, Condition, Errors, IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, Pass, RetryProps, State, StateMachineFragment, TaskInput, Timeout, Wait, WaitTime } from 'aws-cdk-lib/aws-stepfunctions';
 import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Construct } from 'constructs';
 import { isDeterminedNonNegativeInteger } from './private/utils';
@@ -383,9 +383,15 @@ export interface SemaphoreTimeoutOptions {
   /**
    * Maximum run time for the execution.
    *
+   * @deprecated Use taskTimeout instead
    * @default No timeout
    */
   readonly timeout?: Duration;
+  /**
+   * Maximum run time for the execution.
+   * @default No timeout
+   */
+  readonly taskTimeout?: Timeout;
 }
 
 interface SemaphoreTaskCommonInput {
@@ -422,7 +428,7 @@ export class AcquireViaStartExecutionFragment extends StateMachineFragment {
       integrationPattern: IntegrationPattern.RUN_JOB,
       associateWithParent: true,
       input: TaskInput.fromObject(props.input),
-      timeout: props.timeout,
+      taskTimeout: props.taskTimeout ?? (props.timeout ? Timeout.duration(props.timeout) : undefined),
     });
     this.endStates = this.startState.endStates;
   }
@@ -438,13 +444,19 @@ export class ReleaseViaStartExecutionFragment extends StateMachineFragment {
 
   constructor(scope: Construct, id: string, props: ReleaseViaStartExecutionFragmentProps) {
     super(scope, id);
-    this.startState = new StepFunctionsStartExecution(this, 'ReleaseSemaphoreViaStartExecution', {
-      stateMachine: props.stateMachine,
-      integrationPattern: IntegrationPattern.RUN_JOB,
-      associateWithParent: true,
-      input: TaskInput.fromObject(props.input),
-      timeout: props.timeout,
-    });
+    this.startState = new StepFunctionsStartExecution(
+      this,
+      'ReleaseSemaphoreViaStartExecution',
+      {
+        stateMachine: props.stateMachine,
+        integrationPattern: IntegrationPattern.RUN_JOB,
+        associateWithParent: true,
+        input: TaskInput.fromObject(props.input),
+        taskTimeout:
+          props.taskTimeout ??
+          (props.timeout ? Timeout.duration(props.timeout) : undefined),
+      },
+    );
     this.endStates = this.startState.endStates;
   }
 }
