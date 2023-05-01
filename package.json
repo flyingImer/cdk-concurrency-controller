@@ -44,7 +44,7 @@
     "@typescript-eslint/eslint-plugin": "^5",
     "@typescript-eslint/parser": "^5",
     "all-contributors-cli": "^6.24.0",
-    "aws-cdk-lib": "2.77.0",
+    "aws-cdk-lib": "2.63.0",
     "constructs": "10.2.12",
     "eslint": "^8",
     "eslint-import-resolver-node": "^0.3.6",
