@@ -3,7 +3,14 @@ import { Attribute, AttributeType, ITable } from 'aws-cdk-lib/aws-dynamodb';
 import { Choice, Condition, Errors, IChainable, INextable, IntegrationPattern, IStateMachine, JsonPath, Pass, RetryProps, State, StateMachineFragment, TaskInput, Wait, WaitTime } from 'aws-cdk-lib/aws-stepfunctions';
 import { DynamoAttributeValue, DynamoGetItem, DynamoProjectionExpression, DynamoPutItem, DynamoReturnValues, DynamoUpdateItem, StepFunctionsStartExecution } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Construct } from 'constructs';
-import { isDeterminedNonNegativeInteger } from './private/utils';
+import { SemaphoreTimeoutOptions } from './private/types';
+import { isDeterminedNonNegativeInteger, toTaskTimeout } from './private/utils';
+
+// Re-export SemaphoreTimeoutOptions - since this type is needed in ./private/utils,
+// it would have created a circular dependency to have ./private/utils depend on fragments.ts.
+// Definiting it in ./private/types and then re-exporting it makes it easier to further export via JSII
+// without adding a new entry there.
+export { SemaphoreTimeoutOptions } from './private/types';
 
 export interface SemaphoreTableDefinition {
   readonly table: ITable;
@@ -379,15 +386,6 @@ class CheckIfSemaphoreUsedByUserFragment extends StateMachineFragment {
   }
 }
 
-export interface SemaphoreTimeoutOptions {
-  /**
-   * Maximum run time for the execution.
-   *
-   * @default No timeout
-   */
-  readonly timeout?: Duration;
-}
-
 interface SemaphoreTaskCommonInput {
   readonly name: string;
   readonly userId: string;
@@ -422,7 +420,7 @@ export class AcquireViaStartExecutionFragment extends StateMachineFragment {
       integrationPattern: IntegrationPattern.RUN_JOB,
       associateWithParent: true,
       input: TaskInput.fromObject(props.input),
-      timeout: props.timeout,
+      taskTimeout: toTaskTimeout(props),
     });
     this.endStates = this.startState.endStates;
   }
@@ -438,13 +436,17 @@ export class ReleaseViaStartExecutionFragment extends StateMachineFragment {
 
   constructor(scope: Construct, id: string, props: ReleaseViaStartExecutionFragmentProps) {
     super(scope, id);
-    this.startState = new StepFunctionsStartExecution(this, 'ReleaseSemaphoreViaStartExecution', {
-      stateMachine: props.stateMachine,
-      integrationPattern: IntegrationPattern.RUN_JOB,
-      associateWithParent: true,
-      input: TaskInput.fromObject(props.input),
-      timeout: props.timeout,
-    });
+    this.startState = new StepFunctionsStartExecution(
+      this,
+      'ReleaseSemaphoreViaStartExecution',
+      {
+        stateMachine: props.stateMachine,
+        integrationPattern: IntegrationPattern.RUN_JOB,
+        associateWithParent: true,
+        input: TaskInput.fromObject(props.input),
+        taskTimeout: toTaskTimeout(props),
+      },
+    );
     this.endStates = this.startState.endStates;
   }
 }

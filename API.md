@@ -1012,6 +1012,7 @@ const acquireOptions: AcquireOptions = { ... }
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.nextTryWaitTime">nextTryWaitTime</a></code> | <code>string</code> | Wait a fixed amount of time (in second) for another try to acquire semaphore if not acquired in previous tries. |
+| <code><a href="#cdk-concurrency-controller.AcquireOptions.property.taskTimeout">taskTimeout</a></code> | <code>aws-cdk-lib.aws_stepfunctions.Timeout</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.AcquireOptions.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 
 ---
@@ -1058,7 +1059,22 @@ Wait a fixed amount of time (in second) for another try to acquire semaphore if 
 
 ---
 
-##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.AcquireOptions.property.timeout"></a>
+##### `taskTimeout`<sup>Optional</sup> <a name="taskTimeout" id="cdk-concurrency-controller.AcquireOptions.property.taskTimeout"></a>
+
+```typescript
+public readonly taskTimeout: Timeout;
+```
+
+- *Type:* aws-cdk-lib.aws_stepfunctions.Timeout
+- *Default:* No timeout
+
+Maximum run time for the execution.
+
+---
+
+##### ~~`timeout`~~<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.AcquireOptions.property.timeout"></a>
+
+- *Deprecated:* Use taskTimeout instead
 
 ```typescript
 public readonly timeout: Duration;
@@ -1312,13 +1328,29 @@ const acquireViaStartExecutionFragmentProps: AcquireViaStartExecutionFragmentPro
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.taskTimeout">taskTimeout</a></code> | <code>aws-cdk-lib.aws_stepfunctions.Timeout</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.input">input</a></code> | <code><a href="#cdk-concurrency-controller.AcquireSemaphoreTaskInput">AcquireSemaphoreTaskInput</a></code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.stateMachine">stateMachine</a></code> | <code>aws-cdk-lib.aws_stepfunctions.IStateMachine</code> | The Step Functions state machine to start the execution on. |
 
 ---
 
-##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.timeout"></a>
+##### `taskTimeout`<sup>Optional</sup> <a name="taskTimeout" id="cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.taskTimeout"></a>
+
+```typescript
+public readonly taskTimeout: Timeout;
+```
+
+- *Type:* aws-cdk-lib.aws_stepfunctions.Timeout
+- *Default:* No timeout
+
+Maximum run time for the execution.
+
+---
+
+##### ~~`timeout`~~<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.AcquireViaStartExecutionFragmentProps.property.timeout"></a>
+
+- *Deprecated:* Use taskTimeout instead
 
 ```typescript
 public readonly timeout: Duration;
@@ -1450,6 +1482,7 @@ const releaseOptions: ReleaseOptions = { ... }
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.name">name</a></code> | <code>string</code> | The name for the semaphore. |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.userId">userId</a></code> | <code>string</code> | The semaphore user id to acquire/release resource usage. |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.checkSemaphoreUseFirst">checkSemaphoreUseFirst</a></code> | <code>boolean</code> | Check if the semaphore use exists before trying to release it. |
+| <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.taskTimeout">taskTimeout</a></code> | <code>aws-cdk-lib.aws_stepfunctions.Timeout</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.ReleaseOptions.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 
 ---
@@ -1501,7 +1534,22 @@ see more about hot partition: https://aws.amazon.com/premiumsupport/knowledge-ce
 
 ---
 
-##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.ReleaseOptions.property.timeout"></a>
+##### `taskTimeout`<sup>Optional</sup> <a name="taskTimeout" id="cdk-concurrency-controller.ReleaseOptions.property.taskTimeout"></a>
+
+```typescript
+public readonly taskTimeout: Timeout;
+```
+
+- *Type:* aws-cdk-lib.aws_stepfunctions.Timeout
+- *Default:* No timeout
+
+Maximum run time for the execution.
+
+---
+
+##### ~~`timeout`~~<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.ReleaseOptions.property.timeout"></a>
+
+- *Deprecated:* Use taskTimeout instead
 
 ```typescript
 public readonly timeout: Duration;
@@ -1730,13 +1778,29 @@ const releaseViaStartExecutionFragmentProps: ReleaseViaStartExecutionFragmentPro
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.taskTimeout">taskTimeout</a></code> | <code>aws-cdk-lib.aws_stepfunctions.Timeout</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.input">input</a></code> | <code><a href="#cdk-concurrency-controller.ReleaseSemaphoreTaskInput">ReleaseSemaphoreTaskInput</a></code> | *No description.* |
 | <code><a href="#cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.stateMachine">stateMachine</a></code> | <code>aws-cdk-lib.aws_stepfunctions.IStateMachine</code> | The Step Functions state machine to start the execution on. |
 
 ---
 
-##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.timeout"></a>
+##### `taskTimeout`<sup>Optional</sup> <a name="taskTimeout" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.taskTimeout"></a>
+
+```typescript
+public readonly taskTimeout: Timeout;
+```
+
+- *Type:* aws-cdk-lib.aws_stepfunctions.Timeout
+- *Default:* No timeout
+
+Maximum run time for the execution.
+
+---
+
+##### ~~`timeout`~~<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.ReleaseViaStartExecutionFragmentProps.property.timeout"></a>
+
+- *Deprecated:* Use taskTimeout instead
 
 ```typescript
 public readonly timeout: Duration;
@@ -1833,13 +1897,29 @@ const semaphoreStateMachineProps: SemaphoreStateMachineProps = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.taskTimeout">taskTimeout</a></code> | <code>aws-cdk-lib.aws_stepfunctions.Timeout</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.logs">logs</a></code> | <code>aws-cdk-lib.aws_stepfunctions.LogOptions</code> | Defines what execution history events are logged and where they are logged. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreStateMachineProps.property.tracingEnabled">tracingEnabled</a></code> | <code>boolean</code> | Specifies whether Amazon X-Ray tracing is enabled for this state machine. |
 
 ---
 
-##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout"></a>
+##### `taskTimeout`<sup>Optional</sup> <a name="taskTimeout" id="cdk-concurrency-controller.SemaphoreStateMachineProps.property.taskTimeout"></a>
+
+```typescript
+public readonly taskTimeout: Timeout;
+```
+
+- *Type:* aws-cdk-lib.aws_stepfunctions.Timeout
+- *Default:* No timeout
+
+Maximum run time for the execution.
+
+---
+
+##### ~~`timeout`~~<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.SemaphoreStateMachineProps.property.timeout"></a>
+
+- *Deprecated:* Use taskTimeout instead
 
 ```typescript
 public readonly timeout: Duration;
@@ -1944,11 +2024,27 @@ const semaphoreTimeoutOptions: SemaphoreTimeoutOptions = { ... }
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
+| <code><a href="#cdk-concurrency-controller.SemaphoreTimeoutOptions.property.taskTimeout">taskTimeout</a></code> | <code>aws-cdk-lib.aws_stepfunctions.Timeout</code> | Maximum run time for the execution. |
 | <code><a href="#cdk-concurrency-controller.SemaphoreTimeoutOptions.property.timeout">timeout</a></code> | <code>aws-cdk-lib.Duration</code> | Maximum run time for the execution. |
 
 ---
 
-##### `timeout`<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.SemaphoreTimeoutOptions.property.timeout"></a>
+##### `taskTimeout`<sup>Optional</sup> <a name="taskTimeout" id="cdk-concurrency-controller.SemaphoreTimeoutOptions.property.taskTimeout"></a>
+
+```typescript
+public readonly taskTimeout: Timeout;
+```
+
+- *Type:* aws-cdk-lib.aws_stepfunctions.Timeout
+- *Default:* No timeout
+
+Maximum run time for the execution.
+
+---
+
+##### ~~`timeout`~~<sup>Optional</sup> <a name="timeout" id="cdk-concurrency-controller.SemaphoreTimeoutOptions.property.timeout"></a>
+
+- *Deprecated:* Use taskTimeout instead
 
 ```typescript
 public readonly timeout: Duration;

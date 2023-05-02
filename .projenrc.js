@@ -4,7 +4,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
   author: 'Ej Wang',
   authorAddress: 'ej.wang.devs@gmail.com',
 
-  cdkVersion: '2.10.0',
+  cdkVersion: '2.63.0',
 
   autoApproveOptions: {
     allowedUsernames: ['flyingImer'],
